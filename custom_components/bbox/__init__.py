@@ -4,12 +4,15 @@ from __future__ import annotations
 
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import Platform
-from homeassistant.core import HomeAssistant
+from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers import device_registry as dr
+from homeassistant.helpers import entity_registry as er
 
 from .const import BBOX_NAME, DOMAIN, MANUFACTURER
 from .coordinator import BboxDataUpdateCoordinator
 from .helpers import finditem
+
+RESTART_BUTTON_KEY = "restart"
 
 type BBoxConfigEntry = ConfigEntry[BboxDataUpdateCoordinator]
 
@@ -18,7 +21,6 @@ PLATFORMS: list[Platform] = [
     Platform.BINARY_SENSOR,
     Platform.DEVICE_TRACKER,
     Platform.BUTTON,
-    Platform.SWITCH,
 ]
 
 
@@ -39,10 +41,28 @@ async def async_setup_entry(hass: HomeAssistant, entry: BBoxConfigEntry) -> bool
         sw_version=device.get("main", {}).get("version"),
     )
 
+    _async_remove_write_entities(hass, entry)
+
     entry.async_on_unload(entry.add_update_listener(_async_update_listener))
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
 
     return True
+
+
+@callback
+def _async_remove_write_entities(hass: HomeAssistant, entry: BBoxConfigEntry) -> None:
+    """Remove the switch and restart button entities of this entry.
+
+    These write entities no longer exist; earlier installations may still have
+    them in the entity registry. Idempotent, limited to this config entry.
+    """
+    registry = er.async_get(hass)
+    for entity in er.async_entries_for_config_entry(registry, entry.entry_id):
+        if entity.domain == Platform.SWITCH or (
+            entity.domain == Platform.BUTTON
+            and entity.unique_id.endswith(f"-{RESTART_BUTTON_KEY}")
+        ):
+            registry.async_remove(entity.entity_id)
 
 
 async def _async_update_listener(hass: HomeAssistant, entry: BBoxConfigEntry) -> None:

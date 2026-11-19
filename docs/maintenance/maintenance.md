@@ -16,7 +16,7 @@ git diff master...upstream/master -- custom_components/bbox/
 ```
 
 À surveiller : corrections de `coordinator.py`, `config_flow.py` et du client (`bboxpy`, version dans `manifest.json`), changements d'API HA, nouveaux firmwares Bbox.
-À ignorer : tout ce qui ajoute des écritures sur la box (switch, button reboot/ring, etc.), qui sont supprimées dans ce fork.
+À ignorer : tout ce qui ajoute des écritures sur la box (switch, button reboot/ring, etc.), qui sont supprimées dans ce fork (S2). L'intégration est en lecture seule ; seul le bouton Refresh subsiste, et il ne fait qu'interroger la box.
 
 Reporter un correctif : ne jamais fusionner `upstream/master` en bloc. Créer une branche `fix/...` depuis `master`, puis `git cherry-pick -x <sha>` des seuls commits utiles (le `-x` garde la trace de l'origine), résoudre les conflits, lancer les tests, ouvrir une PR vers `master` du fork et la relire avant fusion. Aucune PR n'est fusionnée automatiquement.
 

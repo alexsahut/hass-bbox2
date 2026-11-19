@@ -19,12 +19,6 @@ async def async_setup_entry(
     """Set up sensor."""
     coordinator = entry.runtime_data
     entities = [
-        RestartButton(
-            coordinator,
-            ButtonEntityDescription(
-                key="restart", name="Restart", icon="mdi:restart-alert"
-            ),
-        ),
         RefreshButton(
             coordinator,
             ButtonEntityDescription(
@@ -33,17 +27,6 @@ async def async_setup_entry(
         ),
     ]
     async_add_entities(entities)
-
-
-class RestartButton(BboxEntity, ButtonEntity):
-    """Representation of a button for reboot router."""
-
-    async def async_press(self) -> None:
-        """Handle the button press."""
-        try:
-            await self.coordinator.bbox.device.async_reboot()
-        except BboxException as error:
-            _LOGGER.error(error)
 
 
 class RefreshButton(BboxEntity, ButtonEntity):
