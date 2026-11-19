@@ -23,7 +23,7 @@ Reporter un correctif : ne jamais fusionner `upstream/master` en bloc. Créer un
 ## 2. Vérification à chaque version mensuelle de HA
 
 1. Lire les « breaking changes » de la version (config entries, coordinator, entity, device tracker).
-2. Mettre à jour la version de HA pour les tests : `pytest-homeassistant-custom-component` épingle `homeassistant` exactement, donc attendre la release du plugin ciblant la nouvelle version, puis `uv lock --upgrade-package pytest-homeassistant-custom-component && uv sync`.
+2. Mettre à jour la version de HA pour les tests : `pytest-homeassistant-custom-component` épingle `homeassistant` exactement, donc attendre la release du plugin ciblant la nouvelle version, puis `uv lock --upgrade-package pytest-homeassistant-custom-component && uv sync`. Ne pas forcer `homeassistant` par un `override-dependencies` : avec HA 2026.11.1 et le plugin 0.13.375 (HA 2026.10.4), la collecte des tests échoue (`RuntimeError: httpx was already imported; call alias_httpx() ...`, HA 2026.11 remplaçant `httpx` par `httpx2`). Tant que le plugin n'est pas publié pour la version courante de HA, les tests tournent sur la version précédente : le noter dans la PR et garder l'issue de suivi ouverte.
 3. Lancer `uv run pytest` (le seuil de couverture est de 85 %) et `uv run ruff check . && uv run ruff format --check .`.
 4. Chercher les avertissements de dépréciation : `uv run pytest -W error::DeprecationWarning` (informatif).
 5. Vérifier que la CI (tests, lint, validate hassfest + HACS) est verte, puis tester sur une vraie installation HA avant de publier.
@@ -32,5 +32,14 @@ Reporter un correctif : ne jamais fusionner `upstream/master` en bloc. Créer un
 
 - Versions `MAJOR.MINOR.PATCH` dans `manifest.json`, `1.6.0-dev` pendant le développement.
 - PATCH : correctif ou compatibilité HA ; MINOR : nouvelle entité ou nouveau capteur ; MAJOR : changement incompatible (entités supprimées, domaine, etc.).
-- Publication : mettre à jour `version` dans `manifest.json`, fusionner, puis créer le tag `X.Y.Z` ; `release.yml` crée la release GitHub avec `bbox.zip`.
+- Publication : mettre à jour `version` dans `manifest.json`, fusionner, puis créer le tag `X.Y.Z` ; `release.yml` crée la release GitHub avec `bbox.zip`. `hacs.json` déclare `"zip_release": true` et `"filename": "bbox.zip"` : la Marketplace installe exactement cette archive (le code publié est celui du tag), et ne propose que les versions publiées en release, jamais l'état courant de `master`.
 - `hacs.json` : version minimale de HA relevée seulement quand le code l'exige.
+
+## 4. Surcharge de l'intégration native `bbox` de HA
+
+Home Assistant contient une intégration native nommée `bbox` (configuration YAML, bibliothèque `pybbox`). Ce fork garde le domaine `bbox`, comme l'amont : une fois installé dans `custom_components/bbox`, il **remplace** l'intégration native. Au démarrage, HA journalise donc un avertissement du type « We found a custom integration bbox which has not been tested by Home Assistant… » et signale que l'intégration personnalisée surcharge celle du cœur : c'est attendu.
+
+Conséquences :
+- ne pas configurer l'intégration native `bbox` en YAML en parallèle : elle serait ignorée ;
+- si HA supprime ou renomme un jour son intégration native, vérifier que rien ne change pour ce fork ;
+- en cas de doute sur la version chargée, la page de l'intégration indique « Intégration personnalisée » et la version du `manifest.json`.
