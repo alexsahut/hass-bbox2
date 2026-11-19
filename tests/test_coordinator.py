@@ -51,7 +51,8 @@ async def test_one_failing_endpoint_only_affects_its_entities(
     # the other entities keep their values
     assert float(hass.states.get("sensor.bbox_downloaded").state) > 0
     assert float(hass.states.get("sensor.bbox_system_temperature").state) == 50.5
-    assert hass.states.get("binary_sensor.bbox_link_status").state == "on"
+    # the link status now comes from wan/ip
+    assert hass.states.get("binary_sensor.bbox_link_status").state == STATE_UNAVAILABLE
     assert hass.states.get("button.bbox_refresh").state != STATE_UNAVAILABLE
 
 
