@@ -13,5 +13,14 @@ permissions:
   contents: read
 
 jobs:
-  validate:
-    uses: cyr-ius/.github/.github/workflows/ha-validate.yml@v1
+  hassfest:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: home-assistant/actions/hassfest@master
+  hacs:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: hacs/action@main
+        with:
+          category: integration

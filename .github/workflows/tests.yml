@@ -11,4 +11,11 @@ permissions:
 
 jobs:
   tests:
-    uses: cyr-ius/.github/.github/workflows/ha-tests.yml@v1
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+      - name: Install dependencies
+        run: uv sync --python 3.14 --locked
+      - name: Run tests
+        run: uv run pytest -p no:cacheprovider
