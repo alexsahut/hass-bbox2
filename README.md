@@ -9,16 +9,16 @@
 # Bouygues Bbox Router
 
 This a _custom component_ for [Home Assistant](https://www.home-assistant.io/).
-The `bbox2` integration allows you to observe and control [Bbox router](http://www.bouygues.fr/).
+The `bbox2` integration allows you to observe [Bbox router](http://www.bouygues.fr/).
 
 There is currently support for the following device types within Home Assistant:
 
 - Sensor with traffic metrics
 - Binary Sensor with wan status , public ip , private ip
 - Device tracker for connected devices (via option add wired devices)
-- Switch for enable/disable Wireless and Guest Wifi
-- Press button to restart box
-- Press button to ring phone
+- Press button to refresh the data (only queries the box)
+
+This fork is **read-only**: it never writes anything to the box (no Wi-Fi, WPS, parental control switch, no restart).
 
 ![GitHub release](https://img.shields.io/github/release/Cyr-ius/hass-bbox2)
 [![hacs_badge](https://img.shields.io/badge/HACS-Default-bouygues.svg)](https://github.com/hacs/integration)
