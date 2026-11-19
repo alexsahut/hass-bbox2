@@ -48,3 +48,32 @@ async def test_diagnostics_without_password(
 
     assert set(result["raw"]) == set(PUBLIC_DIAGNOSTIC_ENDPOINTS)
     assert not public_router.endpoints & set(AUTHENTICATED_DIAGNOSTIC_ENDPOINTS)
+
+
+async def test_diagnostics_redact_ssid_and_token(
+    hass: HomeAssistant, config_entry: ConfigEntry, router: FakeBox
+) -> None:
+    """A Wi-Fi SSID and a session token never appear in clear text."""
+    secret_ssid = "MaBox-Secret-SSID"
+    secret_token = "0123456789abcdef-secret-token"
+    for endpoint in PUBLIC_DIAGNOSTIC_ENDPOINTS + AUTHENTICATED_DIAGNOSTIC_ENDPOINTS:
+        router.route(
+            endpoint,
+            [
+                {
+                    "ssid": secret_ssid,
+                    "device": {"token": secret_token},
+                    "btoken": secret_token,
+                    "nat": {"rules": [{"description": "rule", "externalip": "x"}]},
+                }
+            ],
+        )
+    await setup_entry(hass, config_entry)
+
+    result = await async_get_config_entry_diagnostics(hass, config_entry)
+
+    dump = repr(result)
+    assert secret_ssid not in dump
+    assert secret_token not in dump
+    assert result["raw"]["services"][0]["ssid"] == "**REDACTED**"
+    assert result["raw"]["services"][0]["device"]["token"] == "**REDACTED**"

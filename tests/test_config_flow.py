@@ -8,6 +8,7 @@ from homeassistant import config_entries
 from homeassistant.core import HomeAssistant
 from homeassistant.data_entry_flow import FlowResultType
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
+from homeassistant.helpers.selector import TextSelector, TextSelectorType
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 
 from custom_components.bbox.const import DOMAIN
@@ -224,6 +225,22 @@ async def test_form_verify_ssl_kept_for_a_host_name(
     assert get_session.call_args.kwargs == {"verify_ssl": True}
 
 
+def assert_password_is_masked(result) -> None:
+    """The password field uses a password selector, never a clear text field."""
+    schema = result["data_schema"].schema
+    selector = next(v for k, v in schema.items() if k == "password")
+    assert isinstance(selector, TextSelector)
+    assert selector.config["type"] == TextSelectorType.PASSWORD
+
+
+async def test_form_password_is_masked(hass: HomeAssistant) -> None:
+    """The user step masks the password input."""
+    result = await hass.config_entries.flow.async_init(
+        DOMAIN, context={"source": config_entries.SOURCE_USER}
+    )
+    assert_password_is_masked(result)
+
+
 # --- re-authentication -------------------------------------------------------
 
 
@@ -232,6 +249,7 @@ async def start_reauth(hass: HomeAssistant, entry: MockConfigEntry):
     result = await entry.start_reauth_flow(hass)
     assert result["type"] == FlowResultType.FORM
     assert result["step_id"] == "reauth_confirm"
+    assert_password_is_masked(result)
     return result
 
 

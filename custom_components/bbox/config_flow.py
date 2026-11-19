@@ -13,6 +13,11 @@ from homeassistant.config_entries import ConfigFlowResult
 from homeassistant.const import CONF_HOST, CONF_PASSWORD, CONF_VERIFY_SSL
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
+from homeassistant.helpers.selector import (
+    TextSelector,
+    TextSelectorConfig,
+    TextSelectorType,
+)
 
 from .api import (
     BboxAuthError,
@@ -50,10 +55,12 @@ def _is_ip_address(host: str) -> bool:
     return True
 
 
+PASSWORD_SELECTOR = TextSelector(TextSelectorConfig(type=TextSelectorType.PASSWORD))
+
 SCHEMA = vol.Schema(
     {
         vol.Required(CONF_HOST, default=DEFAULT_HOST): str,
-        vol.Optional(CONF_PASSWORD, default=""): str,
+        vol.Optional(CONF_PASSWORD, default=""): PASSWORD_SELECTOR,
         vol.Required(CONF_USE_TLS, default=DEFAULT_USE_TLS): bool,
         vol.Required(CONF_VERIFY_SSL, default=DEFAULT_VERIFY_SSL): bool,
     }
@@ -197,7 +204,9 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                     )
         return self.async_show_form(
             step_id="reauth_confirm",
-            data_schema=vol.Schema({vol.Optional(CONF_PASSWORD, default=""): str}),
+            data_schema=vol.Schema(
+                {vol.Optional(CONF_PASSWORD, default=""): PASSWORD_SELECTOR}
+            ),
             errors=errors,
         )
 

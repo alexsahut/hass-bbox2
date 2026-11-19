@@ -7,6 +7,8 @@ domaines, UUID, règles NAT et dates de première utilisation remplacés par des
 valeurs fictives (plages de documentation 203.0.113.0/24 et 2001:db8::/32,
 MAC localement administrées 02:00:00:00:00:xx). La structure JSON est intacte.
 
+- Les versions de firmware des CPL (`cpl.json`) ne sont pas anonymisées : elles
+  contiennent des numéros de version en `a.b.c.d` qui ne sont pas des adresses IP.
 - Fichier `<endpoint>.json` : `/` remplacé par `_` (ex. `wan_ip_stats.json` = `wan/ip/stats`).
 - `_status.json` : code HTTP obtenu pour chaque endpoint. Les endpoints en 401
   (hosts, wireless, speedtest/info, device/summary, parentalcontrol…) n'ont que le

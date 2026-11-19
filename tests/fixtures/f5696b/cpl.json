@@ -9,7 +9,7 @@
           "manufacturer": "manufacturer-1",
           "speed": 1000,
           "chipset": "88LX5151",
-          "version": "SPIRIT-88LX5151-203.0.113.1-00-20230502-RELEASE",
+          "version": "SPIRIT-88LX5151-7.12.9.142-00-20230502-RELEASE",
           "port": 3,
           "active": 1,
           "associateddevice": [
@@ -19,7 +19,7 @@
               "manufacturer": "manufacturer-1",
               "chipset": "88LX5151",
               "speed": "",
-              "version": "SPIRIT-88LX5151-203.0.113.1-00-20230502-RELEASE",
+              "version": "SPIRIT-88LX5151-7.12.9.142-00-20230502-RELEASE",
               "endstations": [
                 {
                   "macaddress": "02:00:00:00:00:03"
@@ -74,7 +74,7 @@
               "manufacturer": "manufacturer-2",
               "chipset": "88LX5151",
               "speed": "",
-              "version": "88LX5151-SPIRIT-203.0.113.2-143-20230510-RELEASE",
+              "version": "88LX5151-SPIRIT-7.12.9.0-143-20230510-RELEASE",
               "endstations": [
                 {
                   "macaddress": "02:00:00:00:00:13"
@@ -90,7 +90,7 @@
               "manufacturer": "manufacturer-2",
               "chipset": "88LX5151",
               "speed": 100,
-              "version": "SPIRIT-88LX5151-203.0.113.3-00-20230510-RELEASE",
+              "version": "SPIRIT-88LX5151-7.12.9.143-00-20230510-RELEASE",
               "endstations": [
                 {
                   "macaddress": "02:00:00:00:00:16"
