@@ -11,6 +11,7 @@ from homeassistant.components.binary_sensor import (
     BinarySensorEntityDescription,
 )
 from homeassistant.core import HomeAssistant
+from homeassistant.helpers.entity import EntityDescription
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.typing import StateType
 
@@ -80,10 +81,18 @@ async def async_setup_entry(
 class BboxBinarySensor(BboxEntity, BinarySensorEntity):
     """Representation of a sensor."""
 
+    @staticmethod
+    def _default_sources(description: EntityDescription) -> tuple[str, ...]:
+        return (description.key.split(".")[0],)
+
     @property
     def is_on(self):
         """Return sensor state."""
         data = finditem(self.coordinator.data, self.entity_description.key)
         if self.entity_description.value_fn is not None:
-            return self.entity_description.value_fn(data)
+            try:
+                return self.entity_description.value_fn(data)
+            except (TypeError, AttributeError):
+                # Value missing or not supported by this Bbox model
+                return None
         return data

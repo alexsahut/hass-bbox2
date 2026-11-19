@@ -1,0 +1,11 @@
+[
+  {
+    "dhcp": {
+      "state": 1,
+      "enable": 0,
+      "minaddress": "192.168.1.1",
+      "maxaddress": "192.168.1.3",
+      "leasetime": 86400
+    }
+  }
+]

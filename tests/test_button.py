@@ -1,69 +1,49 @@
-"""The tests for the bbox component."""
+"""The tests for the bbox refresh button."""
 
-from unittest.mock import AsyncMock, patch
-
-import pytest
-from bboxpy.exceptions import BboxException
 from homeassistant.components.button import DOMAIN as BUTTON_DOMAIN
 from homeassistant.components.button import SERVICE_PRESS
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.const import ATTR_ENTITY_ID
+from homeassistant.const import ATTR_ENTITY_ID, STATE_UNAVAILABLE
 from homeassistant.core import HomeAssistant
+
+from .common import setup_entry
+from .conftest import FakeBox
 
 
 async def test_refresh(
-    hass: HomeAssistant,
-    config_entry: ConfigEntry,
-    router,
+    hass: HomeAssistant, config_entry: ConfigEntry, router: FakeBox
 ) -> None:
-    """Pressing refresh requests a coordinator refresh."""
-    await hass.config_entries.async_setup(config_entry.entry_id)
+    """Pressing refresh reads the box again (GET only)."""
+    await setup_entry(hass, config_entry)
+    before = router.count("device/mem")
+
+    await hass.services.async_call(
+        BUTTON_DOMAIN,
+        SERVICE_PRESS,
+        {ATTR_ENTITY_ID: "button.bbox_refresh"},
+        blocking=True,
+    )
     await hass.async_block_till_done()
 
-    with patch.object(
-        config_entry.runtime_data, "async_request_refresh", AsyncMock()
-    ) as refresh:
-        await hass.services.async_call(
-            BUTTON_DOMAIN,
-            SERVICE_PRESS,
-            {ATTR_ENTITY_ID: "button.bbox_refresh"},
-            blocking=True,
-        )
-    refresh.assert_awaited_once()
+    assert router.count("device/mem") == before + 1
 
 
 async def test_no_restart_button(
-    hass: HomeAssistant,
-    config_entry: ConfigEntry,
-    router,
+    hass: HomeAssistant, config_entry: ConfigEntry, router: FakeBox
 ) -> None:
     """The restart button does not exist anymore."""
-    await hass.config_entries.async_setup(config_entry.entry_id)
-    await hass.async_block_till_done()
+    await setup_entry(hass, config_entry)
 
     assert hass.states.get("button.bbox_restart") is None
     assert not hass.states.async_entity_ids("switch")
 
 
-async def test_refresh_error_is_logged(
-    hass: HomeAssistant,
-    config_entry: ConfigEntry,
-    router,
-    caplog: pytest.LogCaptureFixture,
+async def test_refresh_button_stays_available_when_an_endpoint_fails(
+    hass: HomeAssistant, config_entry: ConfigEntry, router: FakeBox
 ) -> None:
-    """A BboxException on refresh is logged, not raised."""
-    await hass.config_entries.async_setup(config_entry.entry_id)
-    await hass.async_block_till_done()
-
-    with patch.object(
-        config_entry.runtime_data,
-        "async_request_refresh",
-        AsyncMock(side_effect=BboxException("boom")),
-    ):
-        await hass.services.async_call(
-            BUTTON_DOMAIN,
-            SERVICE_PRESS,
-            {ATTR_ENTITY_ID: "button.bbox_refresh"},
-            blocking=True,
-        )
-    assert "boom" in caplog.text
+    """The button does not depend on any endpoint."""
+    router.route("device", status=500)
+    await setup_entry(hass, config_entry)
+    state = hass.states.get("button.bbox_refresh")
+    assert state is not None
+    assert state.state != STATE_UNAVAILABLE

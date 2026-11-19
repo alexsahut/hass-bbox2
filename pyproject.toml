@@ -12,7 +12,6 @@ packages = []
 
 [dependency-groups]
 dev = [
-  "bboxpy",
   "prek",
   "pytest-homeassistant-custom-component",
   "pytest-asyncio",

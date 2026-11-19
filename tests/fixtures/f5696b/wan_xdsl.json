@@ -1,0 +1,12 @@
+{
+  "exception": {
+    "domain": "domain-19",
+    "code": "404",
+    "errors": [
+      {
+        "name": "",
+        "reason": "Operation not found"
+      }
+    ]
+  }
+}

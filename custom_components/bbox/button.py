@@ -1,16 +1,11 @@
 """Button for Bbox router."""
 
-import logging
-
-from bboxpy.exceptions import BboxException
 from homeassistant.components.button import ButtonEntity, ButtonEntityDescription
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 from . import BBoxConfigEntry
 from .entity import BboxEntity
-
-_LOGGER = logging.getLogger(__name__)
 
 
 async def async_setup_entry(
@@ -33,8 +28,5 @@ class RefreshButton(BboxEntity, ButtonEntity):
     """Representation of a button for refreshing integration data."""
 
     async def async_press(self) -> None:
-        """Handle the button press."""
-        try:
-            await self.coordinator.async_request_refresh()
-        except BboxException as error:
-            _LOGGER.error(error)
+        """Handle the button press: only queries the box again."""
+        await self.coordinator.async_request_refresh()

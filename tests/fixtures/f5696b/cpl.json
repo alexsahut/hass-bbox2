@@ -1,0 +1,120 @@
+[
+  {
+    "cpl": {
+      "running": 0,
+      "list": [
+        {
+          "id": 1,
+          "macaddress": "02:00:00:00:00:01",
+          "manufacturer": "manufacturer-1",
+          "speed": 1000,
+          "chipset": "88LX5151",
+          "version": "SPIRIT-88LX5151-7.12.9.142-00-20230502-RELEASE",
+          "port": 3,
+          "active": 1,
+          "associateddevice": [
+            {
+              "active": 1,
+              "macaddress": "02:00:00:00:00:02",
+              "manufacturer": "manufacturer-1",
+              "chipset": "88LX5151",
+              "speed": "",
+              "version": "SPIRIT-88LX5151-7.12.9.142-00-20230502-RELEASE",
+              "endstations": [
+                {
+                  "macaddress": "02:00:00:00:00:03"
+                },
+                {
+                  "macaddress": "02:00:00:00:00:04"
+                },
+                {
+                  "macaddress": "02:00:00:00:00:05"
+                },
+                {
+                  "macaddress": "02:00:00:00:00:06"
+                },
+                {
+                  "macaddress": "02:00:00:00:00:07"
+                },
+                {
+                  "macaddress": "02:00:00:00:00:08"
+                },
+                {
+                  "macaddress": "02:00:00:00:00:09"
+                },
+                {
+                  "macaddress": "02:00:00:00:00:0a"
+                },
+                {
+                  "macaddress": "02:00:00:00:00:0b"
+                },
+                {
+                  "macaddress": "02:00:00:00:00:0c"
+                },
+                {
+                  "macaddress": "02:00:00:00:00:0d"
+                },
+                {
+                  "macaddress": "02:00:00:00:00:0e"
+                },
+                {
+                  "macaddress": "02:00:00:00:00:0f"
+                },
+                {
+                  "macaddress": "02:00:00:00:00:10"
+                },
+                {
+                  "macaddress": "02:00:00:00:00:11"
+                }
+              ]
+            },
+            {
+              "active": 1,
+              "macaddress": "02:00:00:00:00:12",
+              "manufacturer": "manufacturer-2",
+              "chipset": "88LX5151",
+              "speed": "",
+              "version": "88LX5151-SPIRIT-7.12.9.0-143-20230510-RELEASE",
+              "endstations": [
+                {
+                  "macaddress": "02:00:00:00:00:13"
+                },
+                {
+                  "macaddress": "02:00:00:00:00:14"
+                }
+              ]
+            },
+            {
+              "active": 1,
+              "macaddress": "02:00:00:00:00:15",
+              "manufacturer": "manufacturer-2",
+              "chipset": "88LX5151",
+              "speed": 100,
+              "version": "SPIRIT-88LX5151-7.12.9.143-00-20230510-RELEASE",
+              "endstations": [
+                {
+                  "macaddress": "02:00:00:00:00:16"
+                },
+                {
+                  "macaddress": "02:00:00:00:00:17"
+                },
+                {
+                  "macaddress": "02:00:00:00:00:18"
+                },
+                {
+                  "macaddress": "02:00:00:00:00:19"
+                },
+                {
+                  "macaddress": "02:00:00:00:00:1a"
+                },
+                {
+                  "macaddress": "02:00:00:00:00:1b"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  }
+]

@@ -1,0 +1,66 @@
+[
+  {
+    "lan": {
+      "ip": {
+        "state": "Up",
+        "mtu": 1500,
+        "ipaddress": "192.168.1.1",
+        "ip6enable": 1,
+        "ip6enableGlobal": 1,
+        "ip6state": "Up",
+        "ip6address": [
+          {
+            "ipaddress": "2001:db8:3::3",
+            "status": "Preferred",
+            "valid": "9999-12-31T23:59:59Z",
+            "preferred": "9999-12-31T23:59:59Z"
+          },
+          {
+            "ipaddress": "2001:db8:4::4",
+            "status": "Preferred",
+            "valid": "9999-12-31T23:59:59Z",
+            "preferred": "9999-12-31T23:59:59Z"
+          }
+        ],
+        "ip6prefix": [
+          {
+            "prefix": "2001:db8:5::5/64",
+            "status": "Preferred",
+            "valid": "2026-11-19T23:55:16+0100",
+            "preferred": "2026-11-19T23:25:16+0100"
+          }
+        ],
+        "netmask": "255.255.255.0",
+        "mac": "02:00:00:00:00:1d",
+        "hostname": "hostname-11",
+        "domain": "domain-12",
+        "aliases": "aliases-13"
+      },
+      "switch": {
+        "ports": [
+          {
+            "id": 1,
+            "state": "Down",
+            "link_mode": "100baseTx-HD",
+            "blocked": 0,
+            "flickering": 0
+          },
+          {
+            "id": 2,
+            "state": "Down",
+            "link_mode": "100baseTx-HD",
+            "blocked": 0,
+            "flickering": 0
+          },
+          {
+            "id": 3,
+            "state": "Up",
+            "link_mode": "1000baseT-FD",
+            "blocked": 0,
+            "flickering": 0
+          }
+        ]
+      }
+    }
+  }
+]

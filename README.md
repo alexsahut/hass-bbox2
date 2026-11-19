@@ -38,9 +38,21 @@ Add your device via the Integration menu
 
 ### Initial setup
 
-You must have set a password for your Bbox router web administration page.
+Use the host name **`mabbox.bytel.fr`** (default) with TLS. The Bbox answers a redirect (`302`) to
+`mabbox.bytel.fr` when it is queried by its IP address: the setup then shows an explicit error asking
+to use that name. Your DNS must resolve `mabbox.bytel.fr` to the Bbox (an error says so otherwise).
 
-The first time Home Assistant will connect to your Bbox, you will need to specify the password of bbox.
+The **password is optional**:
+
+- **Without password**: only the public data of the box are read (state of the link, IP addresses,
+  traffic, uptime, firmware, temperature, memory, Ethernet ports, WPS). No device tracker and no
+  Speedtest sensor are created.
+- **With the password of the Bbox web administration page**: the connected devices (device
+  tracker), the Wi-Fi state and the Speedtest are read in addition.
+
+The password can be added, changed or removed later from the re-authentication form.
+
+The integration only reads the box (HTTP `GET`). The only `POST` is the login, when a password is set.
 
 ### Supported routers
 
@@ -53,7 +65,7 @@ Only the routers with Bbox OS are supported:
 This platform offers presence detection by keeping track of the
 devices connected to a [Bbox](http://www.bouygues.fr/) router.
 
-Ability to disable this option by integration options ("Track connected devices"). The Bbox can be configured with its IP address (ex: 192.168.1.254) instead of `mabbox.bytel.fr`; SSL verification is then disabled automatically (this requires `bboxpy` > 1.4.0).
+Presence detection needs the password. Ability to disable this option by integration options ("Track connected devices").
 
 ### Notes
 
