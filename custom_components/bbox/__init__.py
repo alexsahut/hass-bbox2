@@ -31,14 +31,14 @@ async def async_setup_entry(hass: HomeAssistant, entry: BBoxConfigEntry) -> bool
     entry.runtime_data = coordinator
 
     # The Bbox device must exist before the devices connected to it (via_device_id)
-    device = finditem(coordinator.data, "info.device")
+    device = finditem(coordinator.data, "info.device") or {}
     dr.async_get(hass).async_get_or_create(
         config_entry_id=entry.entry_id,
         identifiers={(DOMAIN, device.get("serialnumber", "ABC12345"))},
         manufacturer=MANUFACTURER,
         name=BBOX_NAME,
         model=device.get("modelname"),
-        sw_version=device.get("main", {}).get("version"),
+        sw_version=(device.get("main") or {}).get("version"),
     )
 
     _async_remove_write_entities(hass, entry)

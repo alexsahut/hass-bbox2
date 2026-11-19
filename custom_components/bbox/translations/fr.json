@@ -5,19 +5,35 @@
         "title": "Enregistrement Bouygue Bbox",
         "data": {
           "host": "URL",
-          "password": "Mot de passe",
+          "password": "Mot de passe (facultatif)",
           "use_tls": "Utiliser TLS",
           "verify_ssl": "Vérification du certificat"
+        },
+        "data_description": {
+          "host": "Utilisez mabbox.bytel.fr (et non l'adresse IP de la Bbox).",
+          "password": "Laissez vide pour ne lire que les données publiques. Avec le mot de passe, les appareils connectés, l'état du Wi-Fi et le Speedtest sont aussi lus."
+        }
+      },
+      "reauth_confirm": {
+        "title": "Authentification de la Bbox",
+        "description": "La Bbox a refusé le mot de passe. Saisissez le nouveau mot de passe, ou laissez vide pour ne lire que les données publiques.",
+        "data": {
+          "password": "Mot de passe (facultatif)"
         }
       }
     },
     "error": {
       "cannot_connect": "Impossible de se connecter",
       "invalid_auth": "Authentification incorrect",
-      "serialnumber": "Impossible de récupérer le numéro de série de la Bbox via son API"
+      "serialnumber": "Impossible de récupérer le numéro de série de la Bbox via son API",
+      "redirect": "La Bbox a redirigé la requête (habituel avec son adresse IP). Utilisez plutôt le nom d'hôte mabbox.bytel.fr.",
+      "dns_error": "Le nom d'hôte n'est pas résolu. Vérifiez le DNS de Home Assistant (mabbox.bytel.fr doit pointer vers la Bbox).",
+      "invalid_response": "La réponse n'est pas une réponse valide de l'API Bbox."
     },
     "abort": {
-      "already_configured": "Votre équipement est déjà configuré."
+      "already_configured": "Votre équipement est déjà configuré.",
+      "reauth_successful": "La ré-authentification a réussi.",
+      "wrong_account": "Ce n'est pas la Bbox de cette configuration."
     }
   },
   "options": {

@@ -1,5 +1,5 @@
 version = 1
-revision = 5
+revision = 3
 requires-python = ">=3.14.2"
 
 [[package]]
@@ -401,18 +401,6 @@ source = { registry = "https://pypi.org/simple" }
 sdist = { url = "https://files.pythonhosted.org/packages/47/d7/5bbeb12c44d7c4f2fb5b56abce497eb5ed9f34d85701de869acedd602619/backoff-2.2.1.tar.gz", hash = "sha256:03f829f5bb1923180821643f8753b0502c3b682293992485b0eef2807afa5cba", size = 17001, upload-time = "2022-10-05T19:19:32.061Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/df/73/b6e24bd22e6720ca8ee9a85a0c4a2971af8497d8f3193fa05390cbd46e09/backoff-2.2.1-py3-none-any.whl", hash = "sha256:63579f9a0628e06278f7e47b7d7d5b6ce20dc65c5e96a6f3ca99a6adca0396e8", size = 15148, upload-time = "2022-10-05T19:19:30.546Z" },
-]
-
-[[package]]
-name = "bboxpy"
-version = "1.4.1"
-source = { registry = "https://pypi.org/simple" }
-dependencies = [
-    { name = "aiohttp" },
-]
-sdist = { url = "https://files.pythonhosted.org/packages/39/e2/591ce7cfb137fa79dcd7c94258fd4b39efd1f6bad6e46e792a4bcc5ecb54/bboxpy-1.4.1.tar.gz", hash = "sha256:64f8f683243dfb4378ba9e65e5e15620de392f467b701c7520882b9234dfbb7e", size = 71009, upload-time = "2026-09-19T17:35:21.549Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/0f/b8/45678974fc497d633911f37dd7f39b0dd7e6229fe78d5c692717d48880c5/bboxpy-1.4.1-py3-none-any.whl", hash = "sha256:2adb88f61ec0803fe4d03e41e6228d07ba426a34741681ce83f8dd2259a0dde5", size = 37865, upload-time = "2026-09-19T17:35:20.198Z" },
 ]
 
 [[package]]
@@ -1188,7 +1176,6 @@ source = { virtual = "." }
 
 [package.dev-dependencies]
 dev = [
-    { name = "bboxpy" },
     { name = "prek" },
     { name = "pytest-asyncio" },
     { name = "pytest-homeassistant-custom-component" },
@@ -1199,7 +1186,6 @@ dev = [
 
 [package.metadata.requires-dev]
 dev = [
-    { name = "bboxpy" },
     { name = "prek" },
     { name = "pytest-asyncio" },
     { name = "pytest-homeassistant-custom-component" },

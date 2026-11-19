@@ -6,6 +6,7 @@ from collections.abc import Callable
 from dataclasses import dataclass
 from typing import Any
 
+from homeassistant.components.sensor import DOMAIN as SENSOR_DOMAIN
 from homeassistant.components.sensor import (
     SensorDeviceClass,
     SensorEntity,
@@ -20,10 +21,13 @@ from homeassistant.const import (
     UnitOfTime,
 )
 from homeassistant.core import HomeAssistant
+from homeassistant.helpers import entity_registry as er
+from homeassistant.helpers.entity import EntityDescription
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.typing import StateType
 
 from . import BBoxConfigEntry
+from .const import DOMAIN
 from .entity import BboxEntity
 from .helpers import finditem
 
@@ -34,6 +38,10 @@ class BboxSensorDescription(SensorEntityDescription):
 
     get_value: Callable[..., Any] | None = None
     value_fn: Callable[..., StateType] | None = None
+    # Data read by the coordinator the sensor depends on (default: first key part)
+    data_sources: tuple[str, ...] | None = None
+    # The sensor is only created when a password is configured
+    requires_auth: bool = False
 
 
 def _to_float(value: Any) -> float | None:
@@ -67,6 +75,7 @@ SENSOR_TYPES: tuple[BboxSensorDescription, ...] = (
         # Some models (ex: F@st5688b) only report the temperature (in m°C) in the cpu data
         get_value=lambda self: _get_temperature(self.coordinator.data),
         state_class=SensorStateClass.MEASUREMENT,
+        data_sources=("info", "cpu"),
     ),
     BboxSensorDescription(
         key="wan_ip_stats.wan.ip.stats.rx.bytes",
@@ -209,6 +218,7 @@ SENSOR_TYPES: tuple[BboxSensorDescription, ...] = (
         native_unit_of_measurement=UnitOfDataRate.KILOBITS_PER_SECOND,
         state_class=SensorStateClass.MEASUREMENT,
         entity_registry_enabled_default=False,
+        requires_auth=True,
     ),
 )
 
@@ -218,12 +228,27 @@ async def async_setup_entry(
 ) -> None:
     """Set up sensor."""
     coordinator = entry.runtime_data
-    entities = [BboxSensor(coordinator, description) for description in SENSOR_TYPES]
+    registry = er.async_get(hass)
+    entities = []
+    for description in SENSOR_TYPES:
+        sensor = BboxSensor(coordinator, description)
+        if description.requires_auth and not coordinator.has_password:
+            # Without password the sensor would stay unavailable: no entity
+            if entity_id := registry.async_get_entity_id(
+                SENSOR_DOMAIN, DOMAIN, sensor.unique_id
+            ):
+                registry.async_remove(entity_id)
+            continue
+        entities.append(sensor)
     async_add_entities(entities)
 
 
 class BboxSensor(BboxEntity, SensorEntity):
     """Representation of a sensor."""
+
+    @staticmethod
+    def _default_sources(description: EntityDescription) -> tuple[str, ...]:
+        return (description.key.split(".")[0],)
 
     @property
     def native_value(self):

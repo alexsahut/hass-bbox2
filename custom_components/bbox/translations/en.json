@@ -5,19 +5,35 @@
         "title": "Bouygue Bbox registration",
         "data": {
           "host": "Host",
-          "password": "Password",
+          "password": "Password (optional)",
           "use_tls": "Use TLS",
           "very_ssl": "Verify SSL"
+        },
+        "data_description": {
+          "host": "Use mabbox.bytel.fr (not the IP address of the Bbox).",
+          "password": "Leave empty to read only the public data. With the password, the connected devices, the Wi-Fi state and the Speedtest are also read."
+        }
+      },
+      "reauth_confirm": {
+        "title": "Bbox authentication",
+        "description": "The Bbox refused the password. Enter the new password, or leave it empty to read only the public data.",
+        "data": {
+          "password": "Password (optional)"
         }
       }
     },
     "error": {
       "cannot_connect": "Failed to connect",
       "invalid_auth": "Invalid authentication",
-      "serialnumber": "Failed to retrieve Bbox serialnumber via its API"
+      "serialnumber": "Failed to retrieve Bbox serialnumber via its API",
+      "redirect": "The Bbox redirected the request (usual when using its IP address). Use the host name mabbox.bytel.fr instead.",
+      "dns_error": "The host name can not be resolved. Check the DNS of Home Assistant (mabbox.bytel.fr must resolve to the Bbox).",
+      "invalid_response": "The answer is not a valid Bbox API response."
     },
     "abort": {
-      "already_configured": "Your account is already configured."
+      "already_configured": "Your account is already configured.",
+      "reauth_successful": "Re-authentication was successful.",
+      "wrong_account": "This is not the Bbox of this configuration."
     }
   },
   "options": {

@@ -24,6 +24,8 @@ TO_REDACT = {
     "ip4_addr",
     "ip6_addr",
     "ipaddress",
+    "address",
+    "serialnumber",
     "key",
     "macaddress",
     "passphrase",

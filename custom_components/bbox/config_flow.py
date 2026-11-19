@@ -8,13 +8,22 @@ from collections.abc import Mapping
 from typing import Any
 
 import voluptuous as vol
-from bboxpy import AuthorizationError, Bbox, BboxException, HttpRequestError
 from homeassistant import config_entries
+from homeassistant.config_entries import ConfigFlowResult
 from homeassistant.const import CONF_HOST, CONF_PASSWORD, CONF_VERIFY_SSL
-from homeassistant.core import callback
-from homeassistant.data_entry_flow import FlowResult
-from homeassistant.helpers.aiohttp_client import async_create_clientsession
+from homeassistant.core import HomeAssistant, callback
+from homeassistant.helpers.aiohttp_client import async_get_clientsession
 
+from .api import (
+    BboxAuthError,
+    BboxClient,
+    BboxConnectionError,
+    BboxDnsError,
+    BboxError,
+    BboxNotFoundError,
+    BboxRedirectError,
+    BboxResponseError,
+)
 from .const import (
     CONF_REFRESH_RATE,
     CONF_TRACK_DEVICES,
@@ -27,6 +36,7 @@ from .const import (
     DEFAULT_VERIFY_SSL,
     DOMAIN,
 )
+from .helpers import finditem
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -43,11 +53,58 @@ def _is_ip_address(host: str) -> bool:
 SCHEMA = vol.Schema(
     {
         vol.Required(CONF_HOST, default=DEFAULT_HOST): str,
-        vol.Required(CONF_PASSWORD): str,
+        vol.Optional(CONF_PASSWORD, default=""): str,
         vol.Required(CONF_USE_TLS, default=DEFAULT_USE_TLS): bool,
         vol.Required(CONF_VERIFY_SSL, default=DEFAULT_VERIFY_SSL): bool,
     }
 )
+
+
+def _error_key(error: BboxError) -> str:
+    """Return the form error matching an API client error."""
+    if isinstance(error, BboxRedirectError):
+        return "redirect"
+    if isinstance(error, BboxDnsError):
+        return "dns_error"
+    if isinstance(error, BboxAuthError):
+        return "invalid_auth"
+    if isinstance(error, BboxConnectionError):
+        return "cannot_connect"
+    if isinstance(error, BboxNotFoundError | BboxResponseError):
+        return "invalid_response"
+    return "unknown"
+
+
+def _first_dict(payload: Any) -> dict[str, Any]:
+    if isinstance(payload, list) and payload and isinstance(payload[0], dict):
+        return payload[0]
+    return payload if isinstance(payload, dict) else {}
+
+
+async def _async_identify(hass: HomeAssistant, data: Mapping[str, Any]) -> list[str]:
+    """Check the connection and return the identifiers of the box.
+
+    The serial number is the first one (read with the password), the LAN MAC
+    address (public) comes next. Raises a BboxError when the box can not be read.
+    """
+    client = BboxClient(
+        async_get_clientsession(hass, verify_ssl=data[CONF_VERIFY_SSL]),
+        data[CONF_HOST],
+        password=data.get(CONF_PASSWORD) or None,
+        use_tls=data[CONF_USE_TLS],
+    )
+    identifiers: list[str] = []
+    if client.has_password:
+        await client.async_login()
+        summary = _first_dict(
+            await client.async_get("device/summary", authenticated=True)
+        )
+        if serial := finditem(summary, "device.serialnumber"):
+            identifiers.append(str(serial))
+    lan = _first_dict(await client.async_get("lan/ip"))
+    if mac := finditem(lan, "lan.ip.mac"):
+        identifiers.append(str(mac))
+    return identifiers
 
 
 class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
@@ -65,87 +122,82 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
     async def async_step_user(
         self, user_input: Mapping[str, Any] | None = None
-    ) -> FlowResult:
+    ) -> ConfigFlowResult:
         """Handle the initial step."""
         errors: dict[str, str] = {}
         if user_input:
             user_input = dict(user_input)
+            user_input[CONF_HOST] = user_input[CONF_HOST].strip()
+            user_input[CONF_PASSWORD] = user_input.get(CONF_PASSWORD) or ""
             if user_input[CONF_VERIFY_SSL] and _is_ip_address(user_input[CONF_HOST]):
                 # The Bbox certificate is issued for a hostname, not for an IP address
                 _LOGGER.debug("Host is an IP address, SSL verification is disabled")
                 user_input[CONF_VERIFY_SSL] = False
             try:
-                api = Bbox(
-                    hostname=user_input[CONF_HOST],
-                    password=user_input[CONF_PASSWORD],
-                    use_tls=user_input[CONF_USE_TLS],
-                    verify_ssl=user_input[CONF_VERIFY_SSL],
-                )
-                await api.async_login()
-                infos = await api.device.async_get_bbox_summary()
-                if (
-                    isinstance(infos, list)
-                    and len(infos) > 0
-                    and (sn := infos[0].get("device", {}).get("serialnumber"))
-                ):
-                    await self.async_set_unique_id(sn)
-                    self._abort_if_unique_id_configured()
+                identifiers = await _async_identify(self.hass, user_input)
+            except BboxError as err:
+                errors["base"] = _error_key(err)
+                _LOGGER.warning("Unable to set up the Bbox: %s", err)
+            else:
+                if not identifiers:
+                    errors["base"] = "serialnumber"
+                else:
+                    await self.async_set_unique_id(identifiers[0])
+                    for entry in self._async_current_entries(include_ignore=False):
+                        if entry.unique_id in identifiers:
+                            return self.async_abort(reason="already_configured")
                     return self.async_create_entry(title=DEFAULT_TITLE, data=user_input)
 
-                errors["base"] = "serialnumber"
-
-            except HttpRequestError as err:
-                _LOGGER.warning("Can not to connect at Bbox: %s", err)
-                errors["base"] = "cannot_connect"
-            except AuthorizationError as err:
-                _LOGGER.warning("Fail to authenticate to the Bbox: %s", err)
-                errors["base"] = "invalid_auth"
-            except BboxException:
-                _LOGGER.exception("Unknown error connecting to the Bbox")
-                errors["base"] = "unknown"
-
-        return self.async_show_form(step_id="user", data_schema=SCHEMA, errors=errors)
+        return self.async_show_form(
+            step_id="user",
+            data_schema=self.add_suggested_values_to_schema(SCHEMA, user_input),
+            errors=errors,
+        )
 
     async def async_step_reauth(
         self, entry_data: Mapping[str, Any]
-    ) -> config_entries.ConfigFlowResult:
+    ) -> ConfigFlowResult:
         """Perform reauthentication upon an API authentication error."""
-        self.entry_data = entry_data
         return await self.async_step_reauth_confirm()
 
     async def async_step_reauth_confirm(
         self, user_input: dict[str, Any] | None = None
-    ) -> config_entries.ConfigFlowResult:
-        """Confirm reauthentication dialog."""
+    ) -> ConfigFlowResult:
+        """Confirm reauthentication dialog. The password is optional."""
         errors: dict[str, str] = {}
-        if user_input:
+        entry = self._get_reauth_entry()
+        if user_input is not None:
+            password = user_input.get(CONF_PASSWORD) or ""
             try:
-                api = Bbox(
-                    hostname=self.entry_data[CONF_HOST],
-                    password=user_input[CONF_PASSWORD],
-                    session=async_create_clientsession(self.hass),
-                    use_tls=self.entry_data[CONF_USE_TLS],
-                    verify_ssl=self.entry_data[CONF_VERIFY_SSL],
+                identifiers = await _async_identify(
+                    self.hass, {**entry.data, CONF_PASSWORD: password}
                 )
-                await api.async_login()
-            except BboxException:
-                errors["base"] = "cannot_connect"
+            except BboxError as err:
+                errors["base"] = _error_key(err)
+                _LOGGER.warning("Unable to reauthenticate to the Bbox: %s", err)
             else:
-                infos = await api.device.async_get_bbox_summary()
-                if (
-                    isinstance(infos, list)
-                    and len(infos) > 0
-                    and (sn := infos[0].get("device", {}).get("serialnumber"))
-                ):
-                    await self.async_set_unique_id(sn)
-                    self._abort_if_unique_id_mismatch(reason="wrong_account")
+                if not identifiers:
+                    errors["base"] = "serialnumber"
+                elif password and entry.unique_id not in identifiers:
+                    # Without password the serial number can not be checked
+                    return self.async_abort(reason="wrong_account")
+                else:
+                    others = {
+                        e.unique_id
+                        for e in self._async_current_entries(include_ignore=False)
+                        if e.entry_id != entry.entry_id
+                    }
+                    # The identifier depends on the mode (serial number with a
+                    # password, LAN MAC address without): follow the change.
+                    extra: dict[str, Any] = {}
+                    if identifiers[0] not in others:
+                        extra["unique_id"] = identifiers[0]
                     return self.async_update_reload_and_abort(
-                        self._get_reauth_entry(),
-                        data_updates={CONF_PASSWORD: user_input[CONF_PASSWORD]},
+                        entry, data_updates={CONF_PASSWORD: password}, **extra
                     )
         return self.async_show_form(
             step_id="reauth_confirm",
-            data_schema=vol.Schema({vol.Required(CONF_PASSWORD): str}),
+            data_schema=vol.Schema({vol.Optional(CONF_PASSWORD, default=""): str}),
             errors=errors,
         )
 
@@ -155,7 +207,7 @@ class OptionsFlow(config_entries.OptionsFlow):
 
     async def async_step_init(
         self, user_input: Mapping[str, Any] | None = None
-    ) -> FlowResult:
+    ) -> ConfigFlowResult:
         """Manage the options."""
         if user_input:
             return self.async_create_entry(data=user_input)

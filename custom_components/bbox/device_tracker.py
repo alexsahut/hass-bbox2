@@ -26,15 +26,18 @@ async def async_setup_entry(
     hass: HomeAssistant, entry: BBoxConfigEntry, async_add_entities: AddEntitiesCallback
 ) -> None:
     """Set up sensor."""
-    if not entry.options.get(CONF_TRACK_DEVICES, DEFAULT_TRACK_DEVICES):
-        # Remove the trackers created before the option was disabled
+    coordinator = entry.runtime_data
+    if not coordinator.has_password or not entry.options.get(
+        CONF_TRACK_DEVICES, DEFAULT_TRACK_DEVICES
+    ):
+        # The hosts need a password. Remove the trackers created before the
+        # option was disabled, or before the password was removed
         registry = er.async_get(hass)
         for reg_entry in er.async_entries_for_config_entry(registry, entry.entry_id):
             if reg_entry.domain == DEVICE_TRACKER_DOMAIN:
                 registry.async_remove(reg_entry.entity_id)
         return
 
-    coordinator = entry.runtime_data
     description = SensorEntityDescription(key="tracker", translation_key="tracker")
     devices = coordinator.data.get("devices", {}).get("hosts", {}).get("list", [])
     entities = [
@@ -67,12 +70,12 @@ class BboxDeviceTracker(BboxDeviceEntity, ScannerEntity):
     @property
     def mac_address(self) -> str:
         """Return mac address."""
-        return self._device["macaddress"]
+        return self._mac
 
     @property
-    def ip_address(self) -> str:
-        """Return mac address."""
-        return self._device["ipaddress"]
+    def ip_address(self) -> str | None:
+        """Return ip address."""
+        return self._device.get("ipaddress")
 
     @property
     def is_connected(self) -> bool:
