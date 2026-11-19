@@ -1,3 +1,11 @@
+> **Fork maintenu par [@alexsahut](https://github.com/alexsahut)**, orienté **lecture seule**
+> (suivi de la box sans la piloter). Basé sur
+> [cyr-ius/hass-bbox2](https://github.com/cyr-ius/hass-bbox2) : un grand merci à
+> [cyr-ius](https://github.com/cyr-ius) pour le travail d'origine. Licence MIT conservée.
+> Ce fork est indépendant et n'est pas supporté par l'auteur amont.
+> Installation : ajouter ce dépôt comme dépôt personnalisé (catégorie « Integration »)
+> dans HACS / la Marketplace de Home Assistant.
+
 # Bouygues Bbox Router
 
 This a _custom component_ for [Home Assistant](https://www.home-assistant.io/).
@@ -22,7 +30,7 @@ The preferred way to setup the Bouygues Bbox platform is by enabling the discove
 
 Add Bouygues Bbox module via HACS
 
-[![Open your Home Assistant instance and open a repository inside the Home Assistant Community Store.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=cyr-ius&repository=hass-bbox2&category=integration)
+[![Open your Home Assistant instance and open a repository inside the Home Assistant Community Store.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=alexsahut&repository=hass-bbox2&category=integration)
 
 Add your device via the Integration menu
 

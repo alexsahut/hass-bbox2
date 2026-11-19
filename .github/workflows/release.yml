@@ -7,12 +7,18 @@ on:
       - "*.*.*"
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   release:
-    permissions:
-      contents: write
-    uses: cyr-ius/.github/.github/workflows/ha-release.yml@v1
-    with:
-      domain: "bbox"
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Zip integration
+        run: cd custom_components/bbox && zip -r ../../bbox.zip .
+      - name: Create GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: >
+          gh release create "${GITHUB_REF_NAME}" bbox.zip
+          --repo "${GITHUB_REPOSITORY}" --generate-notes

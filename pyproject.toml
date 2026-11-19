@@ -37,4 +37,6 @@ line-length = 88
 
 [tool.ruff.lint]
 select = ["E", "F", "W", "I", "UP", "B", "SIM"]
+# Line length is handled by `ruff format`; long strings/URLs are tolerated.
+ignore = ["E501"]
 
