@@ -1,0 +1,732 @@
+[
+  {
+    "diags": {
+      "dns": [
+        {
+          "min": 0,
+          "max": 0,
+          "average": 0,
+          "success": 0,
+          "error": 0,
+          "tries": 0,
+          "status": "Unknown",
+          "protocol": "IPv4"
+        },
+        {
+          "min": 0,
+          "max": 0,
+          "average": 0,
+          "success": 0,
+          "error": 0,
+          "tries": 0,
+          "status": "OK",
+          "protocol": "IPv4"
+        },
+        {
+          "min": 0,
+          "max": 0,
+          "average": 0,
+          "success": 0,
+          "error": 0,
+          "tries": 0,
+          "status": "OK",
+          "protocol": "IPv4"
+        },
+        {
+          "min": 0,
+          "max": 0,
+          "average": 0,
+          "success": 0,
+          "error": 0,
+          "tries": 0,
+          "status": "OK",
+          "protocol": "IPv4"
+        },
+        {
+          "min": 0,
+          "max": 0,
+          "average": 0,
+          "success": 0,
+          "error": 0,
+          "tries": 0,
+          "status": "OK",
+          "protocol": "IPv4"
+        },
+        {
+          "min": 0,
+          "max": 0,
+          "average": 0,
+          "success": 0,
+          "error": 0,
+          "tries": 0,
+          "status": "OK",
+          "protocol": "IPv4"
+        },
+        {
+          "min": 0,
+          "max": 0,
+          "average": 0,
+          "success": 0,
+          "error": 0,
+          "tries": 0,
+          "status": "OK",
+          "protocol": "IPv4"
+        },
+        {
+          "min": 0,
+          "max": 0,
+          "average": 0,
+          "success": 0,
+          "error": 0,
+          "tries": 0,
+          "status": "OK",
+          "protocol": "IPv4"
+        },
+        {
+          "min": 0,
+          "max": 0,
+          "average": 0,
+          "success": 0,
+          "error": 0,
+          "tries": 0,
+          "status": "OK",
+          "protocol": "IPv4"
+        },
+        {
+          "min": 0,
+          "max": 0,
+          "average": 0,
+          "success": 0,
+          "error": 0,
+          "tries": 0,
+          "status": "OK",
+          "protocol": "IPv4"
+        },
+        {
+          "min": 0,
+          "max": 0,
+          "average": 0,
+          "success": 0,
+          "error": 0,
+          "tries": 0,
+          "status": "OK",
+          "protocol": "IPv6"
+        },
+        {
+          "min": 0,
+          "max": 0,
+          "average": 0,
+          "success": 0,
+          "error": 0,
+          "tries": 0,
+          "status": "OK",
+          "protocol": "IPv6"
+        },
+        {
+          "min": 0,
+          "max": 0,
+          "average": 0,
+          "success": 0,
+          "error": 0,
+          "tries": 0,
+          "status": "OK",
+          "protocol": "IPv6"
+        },
+        {
+          "min": 0,
+          "max": 0,
+          "average": 0,
+          "success": 0,
+          "error": 0,
+          "tries": 0,
+          "status": "OK",
+          "protocol": "IPv6"
+        },
+        {
+          "min": 5834,
+          "max": 9764,
+          "average": 6467,
+          "success": 22,
+          "error": 0,
+          "tries": 22,
+          "status": "OK",
+          "protocol": "IPv4"
+        },
+        {
+          "min": 3896,
+          "max": 13102,
+          "average": 6784,
+          "success": 22,
+          "error": 0,
+          "tries": 22,
+          "status": "OK",
+          "protocol": "IPv6"
+        },
+        {
+          "min": 5644,
+          "max": 9813,
+          "average": 6580,
+          "success": 22,
+          "error": 0,
+          "tries": 22,
+          "status": "OK",
+          "protocol": "IPv4"
+        },
+        {
+          "min": 5794,
+          "max": 10522,
+          "average": 6608,
+          "success": 22,
+          "error": 0,
+          "tries": 22,
+          "status": "OK",
+          "protocol": "IPv6"
+        },
+        {
+          "min": 5747,
+          "max": 3007340,
+          "average": 142702,
+          "success": 22,
+          "error": 0,
+          "tries": 22,
+          "status": "OK",
+          "protocol": "IPv4"
+        },
+        {
+          "min": 5420,
+          "max": 7196,
+          "average": 6344,
+          "success": 22,
+          "error": 0,
+          "tries": 22,
+          "status": "OK",
+          "protocol": "IPv6"
+        },
+        {
+          "min": 4125,
+          "max": 11724,
+          "average": 6567,
+          "success": 22,
+          "error": 0,
+          "tries": 22,
+          "status": "OK",
+          "protocol": "IPv4"
+        },
+        {
+          "min": 5690,
+          "max": 6910,
+          "average": 6405,
+          "success": 22,
+          "error": 0,
+          "tries": 22,
+          "status": "OK",
+          "protocol": "IPv6"
+        },
+        {
+          "min": 5858,
+          "max": 12672,
+          "average": 6784,
+          "success": 22,
+          "error": 0,
+          "tries": 22,
+          "status": "OK",
+          "protocol": "IPv4"
+        },
+        {
+          "min": 5839,
+          "max": 6966,
+          "average": 6377,
+          "success": 22,
+          "error": 0,
+          "tries": 22,
+          "status": "OK",
+          "protocol": "IPv6"
+        }
+      ],
+      "ping": [
+        {
+          "min": 0,
+          "max": 0,
+          "average": 0,
+          "success": 0,
+          "error": 0,
+          "tries": 0,
+          "status": "Disable",
+          "protocol": "IPv4"
+        },
+        {
+          "min": 0,
+          "max": 0,
+          "average": 0,
+          "success": 0,
+          "error": 0,
+          "tries": 0,
+          "status": "OK",
+          "protocol": "IPv4"
+        },
+        {
+          "min": 0,
+          "max": 0,
+          "average": 0,
+          "success": 0,
+          "error": 0,
+          "tries": 0,
+          "status": "OK",
+          "protocol": "IPv4"
+        },
+        {
+          "min": 0,
+          "max": 0,
+          "average": 0,
+          "success": 0,
+          "error": 0,
+          "tries": 0,
+          "status": "OK",
+          "protocol": "IPv4"
+        },
+        {
+          "min": 0,
+          "max": 0,
+          "average": 0,
+          "success": 0,
+          "error": 0,
+          "tries": 0,
+          "status": "OK",
+          "protocol": "IPv4"
+        },
+        {
+          "min": 0,
+          "max": 0,
+          "average": 0,
+          "success": 0,
+          "error": 0,
+          "tries": 0,
+          "status": "OK",
+          "protocol": "IPv4"
+        },
+        {
+          "min": 0,
+          "max": 0,
+          "average": 0,
+          "success": 0,
+          "error": 0,
+          "tries": 0,
+          "status": "OK",
+          "protocol": "IPv4"
+        },
+        {
+          "min": 0,
+          "max": 0,
+          "average": 0,
+          "success": 0,
+          "error": 0,
+          "tries": 0,
+          "status": "OK",
+          "protocol": "IPv4"
+        },
+        {
+          "min": 0,
+          "max": 0,
+          "average": 0,
+          "success": 0,
+          "error": 0,
+          "tries": 0,
+          "status": "OK",
+          "protocol": "IPv4"
+        },
+        {
+          "min": 0,
+          "max": 0,
+          "average": 0,
+          "success": 0,
+          "error": 0,
+          "tries": 0,
+          "status": "OK",
+          "protocol": "IPv4"
+        },
+        {
+          "min": 0,
+          "max": 0,
+          "average": 0,
+          "success": 0,
+          "error": 0,
+          "tries": 0,
+          "status": "Disable",
+          "protocol": "IPv6"
+        },
+        {
+          "min": 0,
+          "max": 0,
+          "average": 0,
+          "success": 0,
+          "error": 0,
+          "tries": 0,
+          "status": "OK",
+          "protocol": "IPv6"
+        },
+        {
+          "min": 0,
+          "max": 0,
+          "average": 0,
+          "success": 0,
+          "error": 0,
+          "tries": 0,
+          "status": "OK",
+          "protocol": "IPv6"
+        },
+        {
+          "min": 0,
+          "max": 0,
+          "average": 0,
+          "success": 0,
+          "error": 0,
+          "tries": 0,
+          "status": "Disable",
+          "protocol": "IPv6"
+        },
+        {
+          "min": 6077,
+          "max": 11091,
+          "average": 7949,
+          "success": 110,
+          "error": 0,
+          "tries": 110,
+          "status": "OK",
+          "protocol": "IPv4"
+        },
+        {
+          "min": 6437,
+          "max": 17265,
+          "average": 7294,
+          "success": 110,
+          "error": 0,
+          "tries": 110,
+          "status": "OK",
+          "protocol": "IPv6"
+        },
+        {
+          "min": 6151,
+          "max": 15550,
+          "average": 6949,
+          "success": 110,
+          "error": 0,
+          "tries": 110,
+          "status": "OK",
+          "protocol": "IPv4"
+        },
+        {
+          "min": 6425,
+          "max": 8378,
+          "average": 7174,
+          "success": 110,
+          "error": 0,
+          "tries": 110,
+          "status": "OK",
+          "protocol": "IPv6"
+        },
+        {
+          "min": 0,
+          "max": 0,
+          "average": 0,
+          "success": 0,
+          "error": 110,
+          "tries": 110,
+          "status": "Failed",
+          "protocol": "IPv4"
+        },
+        {
+          "min": 6192,
+          "max": 14049,
+          "average": 7722,
+          "success": 110,
+          "error": 0,
+          "tries": 110,
+          "status": "OK",
+          "protocol": "IPv6"
+        },
+        {
+          "min": 6363,
+          "max": 7969,
+          "average": 7078,
+          "success": 110,
+          "error": 0,
+          "tries": 110,
+          "status": "OK",
+          "protocol": "IPv4"
+        },
+        {
+          "min": 18096,
+          "max": 25294,
+          "average": 23465,
+          "success": 50,
+          "error": 60,
+          "tries": 110,
+          "status": "OK",
+          "protocol": "IPv6"
+        },
+        {
+          "min": 12015,
+          "max": 13313,
+          "average": 12719,
+          "success": 110,
+          "error": 0,
+          "tries": 110,
+          "status": "OK",
+          "protocol": "IPv4"
+        },
+        {
+          "min": 6371,
+          "max": 19838,
+          "average": 7276,
+          "success": 110,
+          "error": 0,
+          "tries": 110,
+          "status": "OK",
+          "protocol": "IPv6"
+        }
+      ],
+      "http": [
+        {
+          "min": 0,
+          "max": 0,
+          "average": 0,
+          "success": 0,
+          "error": 0,
+          "tries": 0,
+          "status": "Unknown",
+          "protocol": "IPv4"
+        },
+        {
+          "min": 0,
+          "max": 0,
+          "average": 0,
+          "success": 0,
+          "error": 0,
+          "tries": 0,
+          "status": "OK",
+          "protocol": "IPv4"
+        },
+        {
+          "min": 0,
+          "max": 0,
+          "average": 0,
+          "success": 0,
+          "error": 0,
+          "tries": 0,
+          "status": "OK",
+          "protocol": "IPv4"
+        },
+        {
+          "min": 0,
+          "max": 0,
+          "average": 0,
+          "success": 0,
+          "error": 0,
+          "tries": 0,
+          "status": "OK",
+          "protocol": "IPv4"
+        },
+        {
+          "min": 0,
+          "max": 0,
+          "average": 0,
+          "success": 0,
+          "error": 0,
+          "tries": 0,
+          "status": "OK",
+          "protocol": "IPv4"
+        },
+        {
+          "min": 0,
+          "max": 0,
+          "average": 0,
+          "success": 0,
+          "error": 0,
+          "tries": 0,
+          "status": "OK",
+          "protocol": "IPv4"
+        },
+        {
+          "min": 0,
+          "max": 0,
+          "average": 0,
+          "success": 0,
+          "error": 0,
+          "tries": 0,
+          "status": "OK",
+          "protocol": "IPv4"
+        },
+        {
+          "min": 0,
+          "max": 0,
+          "average": 0,
+          "success": 0,
+          "error": 0,
+          "tries": 0,
+          "status": "OK",
+          "protocol": "IPv4"
+        },
+        {
+          "min": 0,
+          "max": 0,
+          "average": 0,
+          "success": 0,
+          "error": 0,
+          "tries": 0,
+          "status": "OK",
+          "protocol": "IPv4"
+        },
+        {
+          "min": 0,
+          "max": 0,
+          "average": 0,
+          "success": 0,
+          "error": 0,
+          "tries": 0,
+          "status": "OK",
+          "protocol": "IPv4"
+        },
+        {
+          "min": 0,
+          "max": 0,
+          "average": 0,
+          "success": 0,
+          "error": 0,
+          "tries": 0,
+          "status": "Disable",
+          "protocol": "IPv6"
+        },
+        {
+          "min": 0,
+          "max": 0,
+          "average": 0,
+          "success": 0,
+          "error": 0,
+          "tries": 0,
+          "status": "OK",
+          "protocol": "IPv6"
+        },
+        {
+          "min": 0,
+          "max": 0,
+          "average": 0,
+          "success": 0,
+          "error": 0,
+          "tries": 0,
+          "status": "OK",
+          "protocol": "IPv6"
+        },
+        {
+          "min": 0,
+          "max": 0,
+          "average": 0,
+          "success": 0,
+          "error": 0,
+          "tries": 0,
+          "status": "OK",
+          "protocol": "IPv6"
+        },
+        {
+          "min": 14102,
+          "max": 28269,
+          "average": 17253,
+          "success": 22,
+          "error": 0,
+          "tries": 22,
+          "status": "OK",
+          "protocol": "IPv4"
+        },
+        {
+          "min": 19898,
+          "max": 27928,
+          "average": 23433,
+          "success": 22,
+          "error": 0,
+          "tries": 22,
+          "status": "OK",
+          "protocol": "IPv6"
+        },
+        {
+          "min": 13915,
+          "max": 16303,
+          "average": 14624,
+          "success": 22,
+          "error": 0,
+          "tries": 22,
+          "status": "OK",
+          "protocol": "IPv4"
+        },
+        {
+          "min": 17359,
+          "max": 48254,
+          "average": 23731,
+          "success": 22,
+          "error": 0,
+          "tries": 22,
+          "status": "OK",
+          "protocol": "IPv6"
+        },
+        {
+          "min": 58167,
+          "max": 67251,
+          "average": 61113,
+          "success": 22,
+          "error": 0,
+          "tries": 22,
+          "status": "OK",
+          "protocol": "IPv4"
+        },
+        {
+          "min": 21762,
+          "max": 43126,
+          "average": 28425,
+          "success": 22,
+          "error": 0,
+          "tries": 22,
+          "status": "OK",
+          "protocol": "IPv6"
+        },
+        {
+          "min": 18294,
+          "max": 30823,
+          "average": 21231,
+          "success": 22,
+          "error": 0,
+          "tries": 22,
+          "status": "OK",
+          "protocol": "IPv4"
+        },
+        {
+          "min": 36382,
+          "max": 50375,
+          "average": 47976,
+          "success": 22,
+          "error": 0,
+          "tries": 22,
+          "status": "OK",
+          "protocol": "IPv6"
+        },
+        {
+          "min": 25307,
+          "max": 26414,
+          "average": 25808,
+          "success": 22,
+          "error": 0,
+          "tries": 22,
+          "status": "OK",
+          "protocol": "IPv4"
+        },
+        {
+          "min": 17704,
+          "max": 47688,
+          "average": 23098,
+          "success": 22,
+          "error": 0,
+          "tries": 22,
+          "status": "OK",
+          "protocol": "IPv6"
+        }
+      ]
+    }
+  }
+]

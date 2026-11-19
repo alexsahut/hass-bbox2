@@ -1,0 +1,363 @@
+[
+  {
+    "now": "2026-11-19T22:04:19+0100",
+    "authenticated": 0,
+    "preferredAvailable": 0,
+    "display": {
+      "state": ".",
+      "luminosity": 2
+    },
+    "errorCode": {
+      "value": ""
+    },
+    "internet": {
+      "state": 2
+    },
+    "voip": [
+      {
+        "status": "Up",
+        "callstate": "Idle",
+        "message": 1,
+        "notanswered": 4
+      }
+    ],
+    "iptv": [
+      {
+        "channels": 0
+      }
+    ],
+    "usb": {
+      "printer": [],
+      "storage": []
+    },
+    "wireless": {
+      "status": "Configured",
+      "radio": 1,
+      "changedate": "2026-09-21T23:26:49Z",
+      "wps": {
+        "status": "None",
+        "24": {
+          "available": 1
+        },
+        "5": {
+          "available": 1
+        },
+        "enable": 1,
+        "timeout": 0
+      },
+      "guest24enable": 0,
+      "guest5enable": 0,
+      "guestenable": 0,
+      "compatibility24enable": 1,
+      "compatibility5enable": 1
+    },
+    "services": {
+      "identificationDevices": {
+        "onboarded": 1,
+        "state": "OPERATING",
+        "available": 1,
+        "enable": 1
+      },
+      "cybersecurity": {
+        "available": 0,
+        "enable": 0,
+        "threatCount": 0
+      },
+      "contentFiltering": {
+        "eventCount": 0,
+        "available": 0,
+        "enable": 0
+      },
+      "hotspot": {
+        "enable": 0
+      },
+      "firewall": {
+        "enable": 1
+      },
+      "dyndns": {
+        "enable": 0
+      },
+      "dhcp": {
+        "enable": 0
+      },
+      "nat": {
+        "enable": 2
+      },
+      "dmz": {
+        "enable": 0
+      },
+      "natpat": {
+        "enable": 1
+      },
+      "upnp": {
+        "igd": {
+          "enable": 0
+        }
+      },
+      "notification": {
+        "enable": 0
+      },
+      "proxywol": {
+        "enable": 0
+      },
+      "remoteweb": {
+        "enable": 0
+      },
+      "parentalcontrol": {
+        "enable": 0,
+        "status": "",
+        "statusUntil": "",
+        "statusRemaining": 0
+      },
+      "wifischeduler": {
+        "enable": 0,
+        "status": "",
+        "statusUntil": "",
+        "statusRemaining": 0
+      },
+      "voipscheduler": {
+        "enable": 0,
+        "status": "",
+        "statusUntil": "",
+        "statusRemaining": 0
+      },
+      "gamermode": {
+        "enable": 0
+      },
+      "dhcp6": {
+        "enable": 0
+      },
+      "samba": {
+        "enable": 1,
+        "status": 0
+      },
+      "printer": {
+        "enable": 1,
+        "status": 0
+      },
+      "dlna": {
+        "enable": 1,
+        "status": 0
+      },
+      "nanoCdn": {
+        "enable": 1,
+        "status": "Running"
+      }
+    },
+    "diags": [
+      {
+        "ring_test": {
+          "id": 1,
+          "status": "Idle"
+        },
+        "echo_test": {
+          "id": 1,
+          "status": "Idle"
+        }
+      },
+      {
+        "ring_test": {
+          "id": 2,
+          "status": "Idle"
+        },
+        "echo_test": {
+          "id": 2,
+          "status": "Idle"
+        }
+      }
+    ],
+    "hosts": [
+      {
+        "hostname": "",
+        "ipaddress": "192.168.1.10"
+      },
+      {
+        "hostname": "",
+        "ipaddress": "192.168.1.11"
+      },
+      {
+        "hostname": "",
+        "ipaddress": "192.168.1.15"
+      },
+      {
+        "hostname": "",
+        "ipaddress": "192.168.1.17"
+      },
+      {
+        "hostname": "",
+        "ipaddress": "192.168.1.18"
+      },
+      {
+        "hostname": "",
+        "ipaddress": "192.168.1.19"
+      },
+      {
+        "hostname": "",
+        "ipaddress": "192.168.1.20"
+      },
+      {
+        "hostname": "",
+        "ipaddress": "192.168.1.22"
+      },
+      {
+        "hostname": "",
+        "ipaddress": "192.168.1.23"
+      },
+      {
+        "hostname": "",
+        "ipaddress": "192.168.1.24"
+      },
+      {
+        "hostname": "",
+        "ipaddress": "192.168.1.27"
+      },
+      {
+        "hostname": "",
+        "ipaddress": "192.168.1.30"
+      },
+      {
+        "hostname": "",
+        "ipaddress": "192.168.1.31"
+      },
+      {
+        "hostname": "",
+        "ipaddress": "192.168.1.32"
+      },
+      {
+        "hostname": "",
+        "ipaddress": "192.168.1.33"
+      },
+      {
+        "hostname": "",
+        "ipaddress": "192.168.1.35"
+      },
+      {
+        "hostname": "",
+        "ipaddress": "192.168.1.36"
+      },
+      {
+        "hostname": "",
+        "ipaddress": "192.168.1.38"
+      },
+      {
+        "hostname": "",
+        "ipaddress": "192.168.1.40"
+      },
+      {
+        "hostname": "",
+        "ipaddress": "192.168.1.41"
+      },
+      {
+        "hostname": "",
+        "ipaddress": "192.168.1.42"
+      },
+      {
+        "hostname": "",
+        "ipaddress": "192.168.1.43"
+      },
+      {
+        "hostname": "",
+        "ipaddress": "192.168.1.44"
+      },
+      {
+        "hostname": "",
+        "ipaddress": "192.168.1.46"
+      },
+      {
+        "hostname": "",
+        "ipaddress": "192.168.1.48"
+      },
+      {
+        "hostname": "",
+        "ipaddress": "192.168.1.49"
+      },
+      {
+        "hostname": "",
+        "ipaddress": "192.168.1.51"
+      },
+      {
+        "hostname": "",
+        "ipaddress": "192.168.1.52"
+      },
+      {
+        "hostname": "",
+        "ipaddress": "192.168.1.53"
+      },
+      {
+        "hostname": "",
+        "ipaddress": "192.168.1.54"
+      },
+      {
+        "hostname": "",
+        "ipaddress": "192.168.1.7"
+      },
+      {
+        "hostname": "",
+        "ipaddress": "192.168.1.56"
+      },
+      {
+        "hostname": "",
+        "ipaddress": "192.168.1.57"
+      },
+      {
+        "hostname": "",
+        "ipaddress": "192.168.1.58"
+      },
+      {
+        "hostname": "",
+        "ipaddress": "192.168.1.59"
+      },
+      {
+        "hostname": "",
+        "ipaddress": "192.168.1.60"
+      },
+      {
+        "hostname": "",
+        "ipaddress": "192.168.1.61"
+      },
+      {
+        "hostname": "",
+        "ipaddress": "192.168.1.8"
+      },
+      {
+        "hostname": "",
+        "ipaddress": "192.168.1.62"
+      },
+      {
+        "hostname": "",
+        "ipaddress": "192.168.1.63"
+      },
+      {
+        "hostname": "",
+        "ipaddress": "192.168.1.64"
+      }
+    ],
+    "guests": [],
+    "wan": {
+      "ip": {
+        "state": {
+          "ip": 2,
+          "ipv6": "Up"
+        },
+        "stats": {
+          "rx": {
+            "occupation": 25
+          },
+          "tx": {
+            "occupation": 2
+          }
+        }
+      }
+    },
+    "alerts": {
+      "count": 0
+    },
+    "cpl": {
+      "count": 1
+    },
+    "link": {
+      "state": "Up",
+      "type": "bosa"
+    }
+  }
+]

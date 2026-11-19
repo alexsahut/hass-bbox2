@@ -1,0 +1,25 @@
+[
+  {
+    "device": {
+      "cpu": {
+        "time": {
+          "total": 100185979,
+          "user": 32298713,
+          "nice": 58510,
+          "system": 66183187,
+          "io": 20523,
+          "idle": "1387107449",
+          "irq": 1645569
+        },
+        "process": {
+          "created": 17648183,
+          "running": 1,
+          "blocked": 0
+        },
+        "temperature": {
+          "main": 50470
+        }
+      }
+    }
+  }
+]

@@ -1,0 +1,74 @@
+[
+  {
+    "lan": {
+      "stats": {
+        "rx": {
+          "bytes": "688558623366",
+          "packets": "30096771251",
+          "packetserrors": 0,
+          "packetsdiscards": 139944
+        },
+        "tx": {
+          "bytes": "4037561751366",
+          "packets": "47811562081",
+          "packetserrors": 0,
+          "packetsdiscards": 0
+        },
+        "port": [
+          {
+            "index": 1,
+            "rx": {
+              "bandwidth": 0,
+              "bytes": 0,
+              "packets": 0
+            },
+            "tx": {
+              "bandwidth": 0,
+              "bytes": 0,
+              "packets": 0
+            }
+          },
+          {
+            "index": 2,
+            "rx": {
+              "bandwidth": 0,
+              "bytes": 0,
+              "packets": 0
+            },
+            "tx": {
+              "bandwidth": 0,
+              "bytes": 0,
+              "packets": 0
+            }
+          },
+          {
+            "index": 3,
+            "rx": {
+              "bandwidth": 2576,
+              "bytes": "1508782688339",
+              "packets": "2493786126"
+            },
+            "tx": {
+              "bandwidth": 25866,
+              "bytes": "286112404148314",
+              "packets": "1103602147781"
+            }
+          },
+          {
+            "index": 4,
+            "rx": {
+              "bandwidth": 25822,
+              "bytes": "4034936168929",
+              "packets": "43729500030"
+            },
+            "tx": {
+              "bandwidth": 2561,
+              "bytes": "959343470029",
+              "packets": "25954212802"
+            }
+          }
+        ]
+      }
+    }
+  }
+]

@@ -1,0 +1,29 @@
+[
+  {
+    "nat": {
+      "enable": 1,
+      "rules": [
+        {
+          "id": 1,
+          "enable": 1,
+          "description": "Regle exemple",
+          "externalip": "",
+          "externalport": 443,
+          "internalport": 443,
+          "internalip": "192.168.1.8",
+          "protocol": "tcp"
+        },
+        {
+          "id": 2,
+          "enable": 1,
+          "description": "Regle exemple",
+          "externalip": "",
+          "externalport": 80,
+          "internalport": 80,
+          "internalip": "192.168.1.8",
+          "protocol": "tcp"
+        }
+      ]
+    }
+  }
+]

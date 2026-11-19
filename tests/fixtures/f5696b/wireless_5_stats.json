@@ -1,0 +1,12 @@
+{
+  "exception": {
+    "domain": "domain-22",
+    "code": "401",
+    "errors": [
+      {
+        "name": "",
+        "reason": "Operation requires authentication"
+      }
+    ]
+  }
+}

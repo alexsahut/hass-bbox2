@@ -1,0 +1,105 @@
+[
+  {
+    "host": {
+      "id": 75,
+      "hostname": "",
+      "macaddress": "02:00:00:00:00:1c",
+      "ipaddress": "192.168.1.7",
+      "type": "Static",
+      "link": "PLC",
+      "devicetype": "Device",
+      "ip6address": [
+        {
+          "ipaddress": "fe80::1",
+          "status": "Preferred",
+          "lastseen": "2026-10-31T09:25:50+0100",
+          "lastscan": "2026-08-24T11:09:40+0200"
+        },
+        {
+          "ipaddress": "2001:db8:2::2",
+          "status": "Preferred",
+          "lastseen": "2026-11-19T22:04:13+0100",
+          "lastscan": "1970-03-29T02:27:59+0100"
+        }
+      ],
+      "ethernet": {
+        "physicalport": 2,
+        "logicalport": 3,
+        "speed": 1000,
+        "mode": "Full"
+      },
+      "wireless": {
+        "wexindex": 0,
+        "static": 0,
+        "band": "2.4",
+        "txUsage": 0,
+        "rxUsage": 0,
+        "estimatedRate": 0,
+        "rssi0": 0,
+        "mcs": 0,
+        "rate": 0
+      },
+      "wirelessByBand": [],
+      "plc": {
+        "rxphyrate": "",
+        "txphyrate": "",
+        "associateddevice": 0,
+        "interface": 0,
+        "ethernetspeed": 0
+      },
+      "informations": {
+        "type": "Imprimante",
+        "manufacturer": "manufacturer-7",
+        "model": "model-8",
+        "icon": "printer",
+        "operatingSystem": "operatingSystem-9",
+        "version": ""
+      },
+      "parentalcontrol": {
+        "enable": 0,
+        "status": "Allowed",
+        "statusRemaining": 0,
+        "statusUntil": ""
+      },
+      "lease": 0,
+      "firstSeen": "2024-01-01T00:00:00Z",
+      "lastSeen": 0,
+      "active": 1,
+      "scan": {
+        "enable": 1,
+        "status": "",
+        "services": []
+      },
+      "ping": {
+        "min": 0,
+        "max": 0,
+        "average": 0,
+        "success": 0,
+        "error": 0,
+        "tries": 0,
+        "status": "",
+        "results": []
+      }
+    },
+    "wirelesshosts": [
+      {},
+      {},
+      {},
+      {},
+      {},
+      {},
+      {
+        "compatibility": 1
+      },
+      {
+        "compatibility": 1
+      },
+      {},
+      {},
+      {},
+      {},
+      {}
+    ],
+    "extenderhosts": []
+  }
+]

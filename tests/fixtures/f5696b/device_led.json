@@ -1,0 +1,37 @@
+[
+  {
+    "led": {
+      "status_red": "off",
+      "status_green": "off",
+      "status_blue": "off",
+      "status_white": "off",
+      "status_power_on": "off"
+    },
+    "ethernetPort": [
+      {
+        "id": 1,
+        "state": "Down"
+      },
+      {
+        "id": 2,
+        "state": "Down"
+      },
+      {
+        "id": 3,
+        "state": "Up"
+      },
+      {
+        "id": 4,
+        "state": "Up"
+      },
+      {
+        "id": 5,
+        "state": "Down"
+      }
+    ],
+    "screen": {
+      "state": "off",
+      "counter": 5527129
+    }
+  }
+]
