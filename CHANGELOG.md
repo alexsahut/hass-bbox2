@@ -49,6 +49,18 @@ l'identifiant de la box (donc les `unique_id`) change. Voir « Incompatibilités
 - Ré-authentification : l'identifiant ne change pas ; si la MAC lue n'est pas
   celle de l'entrée, la ré-authentification est refusée (`wrong_account`).
 
+### Reconfiguration
+
+- Étape **Reconfigurer** (`async_step_reconfigure`) : changer l'hôte, TLS et la
+  vérification du certificat, ajouter, remplacer ou retirer le mot de passe,
+  sans supprimer l'entrée.
+- Le mot de passe actuel n'est jamais renvoyé au formulaire : champ vide = mot
+  de passe conservé ; case « Retirer le mot de passe » = données publiques
+  seulement.
+- La box lue doit être celle de l'entrée (même adresse MAC LAN), sinon abandon
+  (`wrong_account`) et entrée inchangée. Les `unique_id` et `entity_id` sont
+  conservés ; ajouter le mot de passe fait apparaître les device trackers.
+
 ### Capteurs corrigés
 
 - **System Temperature** : classe température, °C, `measurement`.

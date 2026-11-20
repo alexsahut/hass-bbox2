@@ -64,8 +64,14 @@ name: the setup then shows an explicit error asking to use the name. Your DNS mu
   connected devices (device trackers), the detailed Wi-Fi state and the Speedtest.
 
 The field is masked, and the password is redacted from the diagnostics. When the box refuses the
-password, Home Assistant opens the re-authentication form, where it can be changed or removed. To add
-a password to an entry set up without one, delete the entry and add the integration again. The
+password, Home Assistant opens the re-authentication form, where it can be changed or removed.
+
+**Reconfigure** (Settings → Devices & services → Bouygues Bbox → ⋮ → Reconfigure) changes the host,
+TLS and the certificate verification, and adds, replaces or removes the password, without deleting
+the entry. The password field is always empty (the current password is never sent back to the form):
+left empty, the current password is kept; the "Remove the password" checkbox switches back to the
+public data only. The box read must be the one of the entry (same LAN MAC address), otherwise the
+reconfiguration is refused and the entry is unchanged. The
 identifier of the box (its LAN MAC address) does not depend on the password: the entities keep their
 `unique_id` with or without it.
 

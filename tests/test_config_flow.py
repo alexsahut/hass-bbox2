@@ -374,3 +374,200 @@ async def test_options_flow(hass: HomeAssistant, router: FakeBox) -> None:
     )
     assert result["type"] == FlowResultType.CREATE_ENTRY
     assert entry.options == {"refresh_rate": 120, "track_devices": False}
+
+
+# --- reconfiguration ---------------------------------------------------------
+
+
+async def start_reconfigure(hass: HomeAssistant, entry: MockConfigEntry):
+    entry.add_to_hass(hass)
+    result = await entry.start_reconfigure_flow(hass)
+    assert result["type"] == FlowResultType.FORM
+    assert result["step_id"] == "reconfigure"
+    assert_password_is_masked(result)
+    return result
+
+
+def reconfigure_input(**changes) -> dict:
+    data = {k: v for k, v in MOCK_USER_INPUT.items() if k != "password"}
+    return {**data, **changes}
+
+
+async def test_reconfigure_form_never_shows_the_password(
+    hass: HomeAssistant, router: FakeBox
+) -> None:
+    """The current password is not sent back to the form."""
+    entry = MockConfigEntry(domain=DOMAIN, unique_id=BOX_ID, data=MOCK_USER_INPUT)
+    result = await start_reconfigure(hass, entry)
+
+    for key in result["data_schema"].schema:
+        suggested = (key.description or {}).get("suggested_value")
+        assert suggested != MOCK_USER_INPUT["password"], key
+        if key == "host":
+            assert suggested == "mabbox.bytel.fr"
+    assert "remove_password" in result["data_schema"].schema
+
+
+async def test_reconfigure_adds_a_password(
+    hass: HomeAssistant, router: FakeBox
+) -> None:
+    """An entry without password gets one: login, same identifier."""
+    entry = MockConfigEntry(domain=DOMAIN, unique_id=BOX_ID, data=MOCK_PUBLIC_INPUT)
+    result = await start_reconfigure(hass, entry)
+    # without password, there is nothing to remove
+    assert "remove_password" not in result["data_schema"].schema
+
+    result = await hass.config_entries.flow.async_configure(
+        result["flow_id"], reconfigure_input(password="mock_password")
+    )
+
+    assert result["type"] == FlowResultType.ABORT
+    assert result["reason"] == "reconfigure_successful"
+    assert entry.data == MOCK_USER_INPUT
+    assert entry.unique_id == BOX_ID
+    assert router.count("login", "POST") == 1
+
+
+async def test_reconfigure_keeps_the_password(
+    hass: HomeAssistant, router: FakeBox
+) -> None:
+    """An empty password field keeps the current password; the host changes."""
+    entry = MockConfigEntry(domain=DOMAIN, unique_id=BOX_ID, data=MOCK_USER_INPUT)
+    result = await start_reconfigure(hass, entry)
+
+    result = await hass.config_entries.flow.async_configure(
+        result["flow_id"], reconfigure_input(host=" bbox.lan ", verify_ssl=False)
+    )
+
+    assert result["reason"] == "reconfigure_successful"
+    assert entry.data == {
+        **MOCK_USER_INPUT,
+        "host": "bbox.lan",
+        "verify_ssl": False,
+    }
+    assert router.count("login", "POST") == 1
+
+
+async def test_reconfigure_changes_the_password(
+    hass: HomeAssistant, router: FakeBox
+) -> None:
+    entry = MockConfigEntry(domain=DOMAIN, unique_id=BOX_ID, data=MOCK_USER_INPUT)
+    result = await start_reconfigure(hass, entry)
+
+    result = await hass.config_entries.flow.async_configure(
+        result["flow_id"], reconfigure_input(password="new_password")
+    )
+
+    assert result["reason"] == "reconfigure_successful"
+    assert entry.data["password"] == "new_password"
+
+
+async def test_reconfigure_removes_the_password(
+    hass: HomeAssistant, router: FakeBox
+) -> None:
+    """Remove: no login, public endpoints only, same identifier."""
+    entry = MockConfigEntry(domain=DOMAIN, unique_id=BOX_ID, data=MOCK_USER_INPUT)
+    result = await start_reconfigure(hass, entry)
+
+    result = await hass.config_entries.flow.async_configure(
+        result["flow_id"], reconfigure_input(remove_password=True)
+    )
+
+    assert result["reason"] == "reconfigure_successful"
+    assert entry.data == MOCK_PUBLIC_INPUT
+    assert entry.unique_id == BOX_ID
+    assert router.requests == [("GET", "lan/ip")]
+
+
+async def test_reconfigure_password_and_remove(
+    hass: HomeAssistant, router: FakeBox
+) -> None:
+    """A new password and the removal together: explicit error, nothing read."""
+    entry = MockConfigEntry(domain=DOMAIN, unique_id=BOX_ID, data=MOCK_USER_INPUT)
+    result = await start_reconfigure(hass, entry)
+
+    result = await hass.config_entries.flow.async_configure(
+        result["flow_id"],
+        reconfigure_input(password="new_password", remove_password=True),
+    )
+
+    assert result["type"] == FlowResultType.FORM
+    assert result["errors"] == {"base": "password_and_remove"}
+    assert router.requests == []
+    assert entry.data == MOCK_USER_INPUT
+
+
+async def test_reconfigure_ip_host_disables_ssl_verification(
+    hass: HomeAssistant, public_router: FakeBox
+) -> None:
+    entry = MockConfigEntry(domain=DOMAIN, unique_id=BOX_ID, data=MOCK_PUBLIC_INPUT)
+    result = await start_reconfigure(hass, entry)
+
+    result = await hass.config_entries.flow.async_configure(
+        result["flow_id"], reconfigure_input(host="192.168.1.254")
+    )
+
+    assert result["reason"] == "reconfigure_successful"
+    assert entry.data["host"] == "192.168.1.254"
+    assert entry.data["verify_ssl"] is False
+
+
+@pytest.mark.parametrize("password", ["mock_password", ""])
+async def test_reconfigure_wrong_box(
+    hass: HomeAssistant, router: FakeBox, password: str
+) -> None:
+    """Another box (other LAN MAC address): abort, the entry is unchanged."""
+    entry = MockConfigEntry(
+        domain=DOMAIN, unique_id="02:00:00:00:00:ff", data=MOCK_PUBLIC_INPUT
+    )
+    result = await start_reconfigure(hass, entry)
+
+    result = await hass.config_entries.flow.async_configure(
+        result["flow_id"], reconfigure_input(password=password)
+    )
+
+    assert result["type"] == FlowResultType.ABORT
+    assert result["reason"] == "wrong_account"
+    assert entry.data == MOCK_PUBLIC_INPUT
+    assert entry.unique_id == "02:00:00:00:00:ff"
+
+
+async def test_reconfigure_error_then_success(
+    hass: HomeAssistant, router: FakeBox
+) -> None:
+    """A refused password: error, the form keeps the host but not the password."""
+    entry = MockConfigEntry(domain=DOMAIN, unique_id=BOX_ID, data=MOCK_PUBLIC_INPUT)
+    result = await start_reconfigure(hass, entry)
+    router.route("login", status=401, method="POST", then=[{"status": 200, "json": {}}])
+
+    result = await hass.config_entries.flow.async_configure(
+        result["flow_id"], reconfigure_input(host="bbox.lan", password="wrong")
+    )
+    assert result["type"] == FlowResultType.FORM
+    assert result["errors"] == {"base": "invalid_auth"}
+    suggested = {
+        k: (k.description or {}).get("suggested_value")
+        for k in result["data_schema"].schema
+    }
+    assert suggested["host"] == "bbox.lan"
+    assert suggested["password"] is None
+    assert entry.data == MOCK_PUBLIC_INPUT
+
+    result = await hass.config_entries.flow.async_configure(
+        result["flow_id"], reconfigure_input(password="mock_password")
+    )
+    assert result["reason"] == "reconfigure_successful"
+    assert entry.data == MOCK_USER_INPUT
+
+
+async def test_reconfigure_without_identifier(
+    hass: HomeAssistant, router: FakeBox
+) -> None:
+    entry = MockConfigEntry(domain=DOMAIN, unique_id=BOX_ID, data=MOCK_USER_INPUT)
+    result = await start_reconfigure(hass, entry)
+    router.route("lan/ip", [{}])
+
+    result = await hass.config_entries.flow.async_configure(
+        result["flow_id"], reconfigure_input()
+    )
+    assert result["errors"] == {"base": "no_identifier"}

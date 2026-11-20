@@ -8,7 +8,7 @@ from homeassistant.helpers import entity_registry as er
 
 from .common import setup_entry
 from .conftest import FakeBox
-from .const import AUTHENTICATED_ANSWERS
+from .const import AUTHENTICATED_ANSWERS, BOX_ID
 
 HOSTS = AUTHENTICATED_ANSWERS["hosts"]
 
@@ -122,3 +122,45 @@ async def test_hosts_without_list(
     router.route("hosts", hosts)
     await setup_entry(hass, config_entry)
     assert not hass.states.async_entity_ids("device_tracker")
+
+
+async def test_reconfigure_adds_the_password(
+    hass: HomeAssistant, public_config_entry: ConfigEntry, router: FakeBox
+) -> None:
+    """Adding the password with Reconfigure: same unique_ids, trackers appear."""
+    await setup_entry(hass, public_config_entry)
+    registry = er.async_get(hass)
+    before = {
+        e.unique_id: e.entity_id
+        for e in er.async_entries_for_config_entry(
+            registry, public_config_entry.entry_id
+        )
+    }
+    assert before
+    assert not [uid for uid, eid in before.items() if eid.startswith("device_tracker")]
+
+    result = await public_config_entry.start_reconfigure_flow(hass)
+    result = await hass.config_entries.flow.async_configure(
+        result["flow_id"],
+        {
+            "host": "mabbox.bytel.fr",
+            "password": "mock_password",
+            "use_tls": True,
+            "verify_ssl": True,
+        },
+    )
+    await hass.async_block_till_done()
+
+    assert result["reason"] == "reconfigure_successful"
+    assert public_config_entry.unique_id == BOX_ID
+    after = {
+        e.unique_id: e.entity_id
+        for e in er.async_entries_for_config_entry(
+            registry, public_config_entry.entry_id
+        )
+    }
+    # the public entities are kept, with the same unique_id and entity_id
+    assert before.items() <= after.items()
+    trackers = await enable_trackers(hass, public_config_entry)
+    assert len(trackers) == 3
+    assert hass.states.get("device_tracker.host_001").state == STATE_HOME

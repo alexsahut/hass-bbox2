@@ -63,25 +63,29 @@ demande d'utiliser `mabbox.bytel.fr`. Annuler ensuite.
 
 ## 5. Ajout du mot de passe (saisi par Alex)
 
-La version 2.0.0 n'a pas d'étape « Reconfigurer » : le formulaire de ré-authentification n'apparaît
-que si la box **refuse** un mot de passe. Une entrée créée sans mot de passe ne peut donc pas en
-recevoir un depuis l'interface ; on la supprime puis on la recrée.
+L'entrée créée sans mot de passe en reçoit un par **Reconfigurer**, sans la supprimer.
 
 1. Noter la liste des `entity_id` de l'entrée (Paramètres → Entités, filtre « Bouygues Bbox »).
-2. Appareils et services → Bouygues Bbox → ⋮ → **Supprimer** l'entrée.
-3. **Ajouter une intégration** → Bouygues Bbox, même hôte, et **Alex** saisit le mot de passe dans le
-   champ masqué.
+2. Appareils et services → Bouygues Bbox → ⋮ → **Reconfigurer**.
+3. Le formulaire reprend l'hôte, TLS et la vérification du certificat ; le champ mot de passe est
+   **vide** (le mot de passe actuel n'est jamais renvoyé au formulaire). **Alex** saisit le mot de
+   passe dans le champ masqué, sans toucher au reste, puis valide.
 
 Attendu :
-- l'entrée est créée ;
-- **les entités publiques retrouvent les mêmes `entity_id`** : leur `unique_id` repose sur
-  l'adresse MAC LAN, identique avec ou sans mot de passe, et HA restaure l'`entity_id` d'une entité
-  supprimée recréée avec le même `unique_id`. Aucun doublon d'appareil Bbox ni d'entité suffixée
-  `_2` ;
+- message « La configuration a été mise à jour » ; l'entrée se recharge ;
+- **les entités publiques gardent les mêmes `entity_id`** : la box lue doit être celle de l'entrée
+  (même adresse MAC LAN, identique avec ou sans mot de passe), sinon la reconfiguration est refusée
+  (« Ce n'est pas la Bbox de cette configuration ») et l'entrée reste inchangée. Aucun doublon
+  d'appareil Bbox ni d'entité suffixée `_2` ;
 - le numéro de série apparaît dans les informations de l'appareil Bbox ;
 - les device trackers des appareils connectés apparaissent (option « Suivre les appareils
   connectés », active par défaut), rattachés à l'appareil Bbox ;
 - le capteur « Speedtest download » existe, **désactivé** par défaut.
+
+Le même formulaire change l'hôte, TLS ou la vérification du certificat (champ mot de passe laissé
+vide : il est conservé), remplace le mot de passe, ou le retire (case « Retirer le mot de passe » :
+retour aux seules données publiques, les device trackers disparaissent). Saisir un mot de passe
+**et** cocher la case est refusé.
 
 ## 6. Vérifications capteur par capteur (F@st 5696b)
 
