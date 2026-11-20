@@ -19,6 +19,7 @@ from custom_components.bbox.const import DOMAIN
 
 from .const import (
     AUTHENTICATED_ANSWERS,
+    BOX_ID,
     DEVICE_WITH_SERIAL,
     MOCK_PUBLIC_INPUT,
     MOCK_USER_INPUT,
@@ -152,7 +153,7 @@ def get_config_entry(hass: HomeAssistant) -> ConfigEntry:
         domain=DOMAIN,
         source=SOURCE_USER,
         data=MOCK_USER_INPUT,
-        unique_id="1",
+        unique_id=BOX_ID,
         options={},
         entry_id="123456",
     )
@@ -167,7 +168,7 @@ def get_public_config_entry(hass: HomeAssistant) -> ConfigEntry:
         domain=DOMAIN,
         source=SOURCE_USER,
         data=MOCK_PUBLIC_INPUT,
-        unique_id="02:00:00:00:00:1d",
+        unique_id=BOX_ID,
         options={},
         entry_id="654321",
     )

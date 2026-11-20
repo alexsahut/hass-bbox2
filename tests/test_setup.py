@@ -6,8 +6,11 @@ from homeassistant.helpers import device_registry as dr
 from homeassistant.helpers import entity_registry as er
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 
+from custom_components.bbox.const import DOMAIN
+
 from .common import setup_entry
 from .conftest import FakeBox
+from .const import BOX_ID, MOCK_USER_INPUT, SERIAL
 
 
 async def test_setup_entry(
@@ -27,6 +30,7 @@ async def test_setup_entry(
         "wan/ip/stats",
         "summary",
         "wireless/wps",
+        "lan/ip",
         "hosts",
         "wireless",
         "speedtest/info",
@@ -56,6 +60,12 @@ async def test_setup_entry_without_password(
         "wan/ip/stats",
         "summary",
         "wireless/wps",
+        "upnp/igd",
+        "wan/ftth/stats",
+        "wan/diags",
+        "lan/stats",
+        "alerts",
+        "lan/ip",
     }
     assert not hass.states.async_entity_ids("device_tracker")
     assert hass.states.get("sensor.bbox_ip_address").state == "203.0.113.46"
@@ -88,9 +98,38 @@ async def test_box_device_is_registered(
     registry = dr.async_get(hass)
     devices = dr.async_entries_for_config_entry(registry, config_entry.entry_id)
     box = next(d for d in devices if d.via_device_id is None)
+    assert box.identifiers == {(DOMAIN, BOX_ID)}
+    assert box.serial_number == SERIAL
     assert box.model == "F@st5696b"
     assert box.sw_version == "25.5.76"
     assert all(d.via_device_id == box.id for d in devices if d is not box)
+
+
+async def test_entry_without_unique_id_gets_the_lan_mac(
+    hass: HomeAssistant, router: FakeBox
+) -> None:
+    """An entry without identifier takes the LAN MAC address read by the coordinator."""
+    entry = MockConfigEntry(domain=DOMAIN, data=MOCK_USER_INPUT)
+    entry.add_to_hass(hass)
+    await setup_entry(hass, entry)
+
+    assert entry.state == ConfigEntryState.LOADED
+    assert entry.unique_id == BOX_ID
+    registry = dr.async_get(hass)
+    assert registry.async_get_device_by_identifier((DOMAIN, BOX_ID), entry.entry_id)
+
+
+async def test_entry_without_any_identifier_fails(
+    hass: HomeAssistant, router: FakeBox
+) -> None:
+    """No unique_id and no LAN MAC address: the entry is not set up."""
+    router.route("lan/ip", status=500)
+    entry = MockConfigEntry(domain=DOMAIN, data=MOCK_USER_INPUT)
+    entry.add_to_hass(hass)
+    await setup_entry(hass, entry)
+
+    assert entry.state == ConfigEntryState.SETUP_ERROR
+    assert entry.unique_id is None
 
 
 async def test_setup_without_the_device_endpoint(

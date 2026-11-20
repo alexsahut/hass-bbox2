@@ -4,6 +4,8 @@ from __future__ import annotations
 
 from typing import Any
 
+from homeassistant.helpers.device_registry import format_mac
+
 
 def finditem(data: dict[str, Any], key_chain: str, default: Any = None) -> Any:
     """Get recursive key and return value.
@@ -27,3 +29,16 @@ def finditem(data: dict[str, Any], key_chain: str, default: Any = None) -> Any:
             ):
                 data = data[int(key)]
     return default if data is None and default is not None else data
+
+
+def box_identifier(lan_ip: Any) -> str | None:
+    """Return the identifier of the box: its LAN MAC address, normalized.
+
+    Read from `lan/ip` (public): the same with or without password.
+    """
+    if isinstance(lan_ip, list) and lan_ip and isinstance(lan_ip[0], dict):
+        lan_ip = lan_ip[0]
+    if not isinstance(lan_ip, dict):
+        return None
+    mac = finditem(lan_ip, "lan.ip.mac")
+    return format_mac(str(mac)) if mac else None

@@ -19,10 +19,11 @@ from homeassistant.const import (
     UnitOfDataRate,
     UnitOfInformation,
     UnitOfTemperature,
+    UnitOfTime,
 )
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers import entity_registry as er
-from homeassistant.helpers.entity import EntityDescription
+from homeassistant.helpers.entity import EntityCategory, EntityDescription
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.typing import StateType
 from homeassistant.util import dt as dt_util
@@ -99,6 +100,45 @@ def _get_boot_time(data: dict[str, Any]) -> datetime | None:
     if (parsed := dt_util.parse_datetime(now)) is None or parsed.tzinfo is None:
         return None
     return (parsed - timedelta(seconds=uptime)).replace(microsecond=0)
+
+
+def _alerts_count(data: dict[str, Any]) -> int | None:
+    """Return the number of alerts: length of `alerts.list`.
+
+    When `alerts` is not available, `summary.alerts.count` gives the same number.
+    """
+    alerts = finditem(data, "alerts.alerts.list")
+    if isinstance(alerts, list):
+        return len(alerts)
+    count = finditem(data, "summary.alerts.count")
+    return count if isinstance(count, int) and not isinstance(count, bool) else None
+
+
+def _known_devices(data: dict[str, Any]) -> int | None:
+    """Return the number of entries of `summary.hosts` (no name nor address)."""
+    hosts = finditem(data, "summary.hosts")
+    return len(hosts) if isinstance(hosts, list) else None
+
+
+def _last_latency(data: dict[str, Any], series: str) -> float | None:
+    """Return the average latency (ms) of the last point of a `wan/diags` series.
+
+    The series are in chronological order: the last element of the list is the
+    most recent point, whatever its protocol (the box alternates IPv4 and IPv6).
+    A point without measurement (no try, or no success) gives None, never 0.
+    The box gives microseconds (assumption, see maintenance.md).
+    """
+    points = finditem(data, f"wan_diags.diags.{series}")
+    if not isinstance(points, list) or not points:
+        return None
+    point = points[-1]
+    if not isinstance(point, dict):
+        return None
+    tries, success = _to_float(point.get("tries")), _to_float(point.get("success"))
+    average = _to_float(point.get("average"))
+    if not tries or not success or average is None or average < 0:
+        return None
+    return round(average / 1000, 3)
 
 
 SENSOR_TYPES: tuple[BboxSensorDescription, ...] = (
@@ -257,6 +297,94 @@ SENSOR_TYPES: tuple[BboxSensorDescription, ...] = (
         state_class=SensorStateClass.MEASUREMENT,
         entity_registry_enabled_default=False,
         requires_auth=True,
+    ),
+    BboxSensorDescription(
+        key="wan_ftth_stats.wan.ftth.mode",
+        translation_key="link_type",
+        icon="mdi:ethernet",
+        entity_category=EntityCategory.DIAGNOSTIC,
+    ),
+    BboxSensorDescription(
+        key="wan_ip_stats.wan.ip.stats.rx.contractualBandwidth",
+        translation_key="contractual_download",
+        icon="mdi:download-network",
+        device_class=SensorDeviceClass.DATA_RATE,
+        native_unit_of_measurement=UnitOfDataRate.KILOBITS_PER_SECOND,
+        value_fn=_to_float,
+    ),
+    BboxSensorDescription(
+        key="wan_ip_stats.wan.ip.stats.tx.contractualBandwidth",
+        translation_key="contractual_upload",
+        icon="mdi:upload-network",
+        device_class=SensorDeviceClass.DATA_RATE,
+        native_unit_of_measurement=UnitOfDataRate.KILOBITS_PER_SECOND,
+        value_fn=_to_float,
+    ),
+    BboxSensorDescription(
+        key="alerts.alerts.list",
+        translation_key="alerts",
+        icon="mdi:alert-circle-outline",
+        state_class=SensorStateClass.MEASUREMENT,
+        get_value=lambda self: _alerts_count(self.coordinator.data),
+        data_sources=("alerts", "summary"),
+    ),
+    BboxSensorDescription(
+        key="summary.hosts",
+        translation_key="known_devices",
+        icon="mdi:devices",
+        state_class=SensorStateClass.MEASUREMENT,
+        get_value=lambda self: _known_devices(self.coordinator.data),
+    ),
+    BboxSensorDescription(
+        key="wan_diags.diags.ping",
+        translation_key="latency_ping",
+        icon="mdi:timer-outline",
+        device_class=SensorDeviceClass.DURATION,
+        native_unit_of_measurement=UnitOfTime.MILLISECONDS,
+        state_class=SensorStateClass.MEASUREMENT,
+        get_value=lambda self: _last_latency(self.coordinator.data, "ping"),
+    ),
+    BboxSensorDescription(
+        key="wan_diags.diags.dns",
+        translation_key="latency_dns",
+        icon="mdi:timer-outline",
+        device_class=SensorDeviceClass.DURATION,
+        native_unit_of_measurement=UnitOfTime.MILLISECONDS,
+        state_class=SensorStateClass.MEASUREMENT,
+        entity_registry_enabled_default=False,
+        get_value=lambda self: _last_latency(self.coordinator.data, "dns"),
+    ),
+    BboxSensorDescription(
+        key="wan_diags.diags.http",
+        translation_key="latency_http",
+        icon="mdi:timer-outline",
+        device_class=SensorDeviceClass.DURATION,
+        native_unit_of_measurement=UnitOfTime.MILLISECONDS,
+        state_class=SensorStateClass.MEASUREMENT,
+        entity_registry_enabled_default=False,
+        get_value=lambda self: _last_latency(self.coordinator.data, "http"),
+    ),
+    BboxSensorDescription(
+        key="lan_stats.lan.stats.rx.bytes",
+        translation_key="lan_received",
+        icon="mdi:download-network",
+        device_class=SensorDeviceClass.DATA_SIZE,
+        native_unit_of_measurement=UnitOfInformation.BYTES,
+        suggested_unit_of_measurement=UnitOfInformation.GIGABYTES,
+        state_class=SensorStateClass.TOTAL_INCREASING,
+        entity_registry_enabled_default=False,
+        value_fn=lambda x: int(x),
+    ),
+    BboxSensorDescription(
+        key="lan_stats.lan.stats.tx.bytes",
+        translation_key="lan_sent",
+        icon="mdi:upload-network",
+        device_class=SensorDeviceClass.DATA_SIZE,
+        native_unit_of_measurement=UnitOfInformation.BYTES,
+        suggested_unit_of_measurement=UnitOfInformation.GIGABYTES,
+        state_class=SensorStateClass.TOTAL_INCREASING,
+        entity_registry_enabled_default=False,
+        value_fn=lambda x: int(x),
     ),
 )
 

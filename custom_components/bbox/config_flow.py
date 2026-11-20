@@ -41,7 +41,7 @@ from .const import (
     DEFAULT_VERIFY_SSL,
     DOMAIN,
 )
-from .helpers import finditem
+from .helpers import box_identifier
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -82,17 +82,12 @@ def _error_key(error: BboxError) -> str:
     return "unknown"
 
 
-def _first_dict(payload: Any) -> dict[str, Any]:
-    if isinstance(payload, list) and payload and isinstance(payload[0], dict):
-        return payload[0]
-    return payload if isinstance(payload, dict) else {}
+async def _async_identify(hass: HomeAssistant, data: Mapping[str, Any]) -> str | None:
+    """Check the connection and return the identifier of the box.
 
-
-async def _async_identify(hass: HomeAssistant, data: Mapping[str, Any]) -> list[str]:
-    """Check the connection and return the identifiers of the box.
-
-    The serial number is the first one (read with the password), the LAN MAC
-    address (public) comes next. Raises a BboxError when the box can not be read.
+    The identifier is the LAN MAC address (`lan/ip`, public): the same with or
+    without password. With a password, the login checks it first. Raises a
+    BboxError when the box can not be read.
     """
     client = BboxClient(
         async_get_clientsession(hass, verify_ssl=data[CONF_VERIFY_SSL]),
@@ -100,18 +95,9 @@ async def _async_identify(hass: HomeAssistant, data: Mapping[str, Any]) -> list[
         password=data.get(CONF_PASSWORD) or None,
         use_tls=data[CONF_USE_TLS],
     )
-    identifiers: list[str] = []
     if client.has_password:
         await client.async_login()
-        summary = _first_dict(
-            await client.async_get("device/summary", authenticated=True)
-        )
-        if serial := finditem(summary, "device.serialnumber"):
-            identifiers.append(str(serial))
-    lan = _first_dict(await client.async_get("lan/ip"))
-    if mac := finditem(lan, "lan.ip.mac"):
-        identifiers.append(str(mac))
-    return identifiers
+    return box_identifier(await client.async_get("lan/ip"))
 
 
 class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
@@ -141,18 +127,16 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 _LOGGER.debug("Host is an IP address, SSL verification is disabled")
                 user_input[CONF_VERIFY_SSL] = False
             try:
-                identifiers = await _async_identify(self.hass, user_input)
+                box_id = await _async_identify(self.hass, user_input)
             except BboxError as err:
                 errors["base"] = _error_key(err)
                 _LOGGER.warning("Unable to set up the Bbox: %s", err)
             else:
-                if not identifiers:
-                    errors["base"] = "serialnumber"
+                if not box_id:
+                    errors["base"] = "no_identifier"
                 else:
-                    await self.async_set_unique_id(identifiers[0])
-                    for entry in self._async_current_entries(include_ignore=False):
-                        if entry.unique_id in identifiers:
-                            return self.async_abort(reason="already_configured")
+                    await self.async_set_unique_id(box_id)
+                    self._abort_if_unique_id_configured()
                     return self.async_create_entry(title=DEFAULT_TITLE, data=user_input)
 
         return self.async_show_form(
@@ -176,31 +160,21 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         if user_input is not None:
             password = user_input.get(CONF_PASSWORD) or ""
             try:
-                identifiers = await _async_identify(
+                box_id = await _async_identify(
                     self.hass, {**entry.data, CONF_PASSWORD: password}
                 )
             except BboxError as err:
                 errors["base"] = _error_key(err)
                 _LOGGER.warning("Unable to reauthenticate to the Bbox: %s", err)
             else:
-                if not identifiers:
-                    errors["base"] = "serialnumber"
-                elif password and entry.unique_id not in identifiers:
-                    # Without password the serial number can not be checked
+                if not box_id:
+                    errors["base"] = "no_identifier"
+                elif box_id != entry.unique_id:
                     return self.async_abort(reason="wrong_account")
                 else:
-                    others = {
-                        e.unique_id
-                        for e in self._async_current_entries(include_ignore=False)
-                        if e.entry_id != entry.entry_id
-                    }
-                    # The identifier depends on the mode (serial number with a
-                    # password, LAN MAC address without): follow the change.
-                    extra: dict[str, Any] = {}
-                    if identifiers[0] not in others:
-                        extra["unique_id"] = identifiers[0]
+                    # The identifier does not depend on the password: unchanged
                     return self.async_update_reload_and_abort(
-                        entry, data_updates={CONF_PASSWORD: password}, **extra
+                        entry, data_updates={CONF_PASSWORD: password}
                     )
         return self.async_show_form(
             step_id="reauth_confirm",

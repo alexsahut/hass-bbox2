@@ -54,6 +54,12 @@ PUBLIC_ENDPOINTS: tuple[Endpoint, ...] = (
     Endpoint("wan_ip_stats", "wan/ip/stats"),
     Endpoint("summary", "summary"),
     Endpoint("wps", "wireless/wps"),
+    Endpoint("upnp_igd", "upnp/igd"),
+    Endpoint("wan_ftth_stats", "wan/ftth/stats"),
+    Endpoint("wan_diags", "wan/diags"),
+    Endpoint("lan_stats", "lan/stats"),
+    Endpoint("alerts", "alerts"),
+    Endpoint("lan_ip", "lan/ip"),
 )
 
 # Endpoints which require a password: read only when one is configured.
@@ -114,6 +120,11 @@ class BboxDataUpdateCoordinator(DataUpdateCoordinator[dict[str, dict[str, Any]]]
         )
         self._unsupported: set[str] = set()
         self._failing: set[str] = set()
+
+    @property
+    def box_id(self) -> str:
+        """Return the identifier of the box (LAN MAC address, see config flow)."""
+        return str(self.config_entry.unique_id)
 
     @property
     def has_password(self) -> bool:

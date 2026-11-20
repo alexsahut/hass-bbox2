@@ -5,12 +5,13 @@ from __future__ import annotations
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import Platform
 from homeassistant.core import HomeAssistant, callback
+from homeassistant.exceptions import ConfigEntryError
 from homeassistant.helpers import device_registry as dr
 from homeassistant.helpers import entity_registry as er
 
 from .const import BBOX_NAME, DOMAIN, MANUFACTURER
 from .coordinator import BboxDataUpdateCoordinator
-from .helpers import finditem
+from .helpers import box_identifier, finditem
 
 RESTART_BUTTON_KEY = "restart"
 
@@ -30,14 +31,21 @@ async def async_setup_entry(hass: HomeAssistant, entry: BBoxConfigEntry) -> bool
     await coordinator.async_config_entry_first_refresh()
     entry.runtime_data = coordinator
 
+    if not entry.unique_id:
+        # Every entry gets the LAN MAC address from the config flow
+        if not (box_id := box_identifier(coordinator.data.get("lan_ip"))):
+            raise ConfigEntryError("The LAN MAC address of the Bbox is unknown")
+        hass.config_entries.async_update_entry(entry, unique_id=box_id)
+
     # The Bbox device must exist before the devices connected to it (via_device_id)
     device = finditem(coordinator.data, "info.device") or {}
     dr.async_get(hass).async_get_or_create(
         config_entry_id=entry.entry_id,
-        identifiers={(DOMAIN, device.get("serialnumber", "ABC12345"))},
+        identifiers={(DOMAIN, coordinator.box_id)},
         manufacturer=MANUFACTURER,
         name=BBOX_NAME,
         model=device.get("modelname"),
+        serial_number=device.get("serialnumber"),
         sw_version=(device.get("main") or {}).get("version"),
     )
 

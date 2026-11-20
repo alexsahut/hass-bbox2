@@ -57,10 +57,10 @@ Endpoints lus à chaque cycle :
 
 | Mode | Endpoints (`/api/v1/…`) |
 |---|---|
-| Sans mot de passe (publics) | `device`, `device/cpu`, `device/mem`, `device/led`, `wan/ip`, `wan/ip/stats`, `summary`, `wireless/wps` |
+| Sans mot de passe (publics) | `device`, `device/cpu`, `device/mem`, `device/led`, `wan/ip`, `wan/ip/stats`, `summary`, `wireless/wps`, `upnp/igd`, `wan/ftth/stats`, `wan/diags`, `lan/stats`, `alerts` (S6) |
 | Avec mot de passe (en plus) | `hosts`, `wireless`, `speedtest/info`, `device/summary` |
 
-`parentalcontrol` n'est plus lu. En plus, le config flow lit `lan/ip` (public, adresse MAC LAN) et, avec mot de passe, `device/summary` (numéro de série) ; les diagnostics lisent quelques endpoints supplémentaires, toujours en `GET`.
+`parentalcontrol` n'est plus lu. En plus, le config flow lit `lan/ip` (public, adresse MAC LAN) et, avec mot de passe, `device/summary` (numéro de série) ; les diagnostics lisent quelques endpoints supplémentaires, toujours en `GET` (`lan/stats` et `wan/ftth/stats` n'en font plus partie depuis S6 : le coordinateur les lit déjà).
 
 **Sans mot de passe**, les entités qui dépendent d'un endpoint authentifié ne sont pas créées (Speedtest download, device trackers) et celles déjà enregistrées sont retirées du registre.
 
@@ -93,6 +93,40 @@ Endpoints lus à chaque cycle :
 **Link status** : `ON` si `wan.link.state` de `wan/ip` vaut `Up` (état du lien physique/optique). `wan.internet.state` n'est pas utilisé : c'est un entier dont la signification n'est pas documentée (valeur `2` sur une box connectée). Le `device.status` (état de la box) n'est plus utilisé. Le `unique_id` est conservé.
 
 **Ports Ethernet** : un binary_sensor par entrée de `ethernetPort` (`device/led`), nommé d'après son `id` réel (« Ethernet port 3 »). La clé d'unicité reste `led.ethernetPort.{position}.state`, identique à l'ancienne pour les ports existants (la 5696b renvoie les `id` 1 à 5 dans l'ordre) ; l'état est cherché par `id`. Les ports apparaissent dès que `device/led` répond, même après le démarrage. Un port disparu de la réponse passe à l'état inconnu.
+
+### Capteurs publics (S6)
+
+Tous lisibles sans mot de passe (`unique_id` = `{numéro de série, ou ABC12345 sans mot de passe}-{clé}`). Les noms viennent des `translation_key` (`strings.json`, `translations/en.json`, `translations/fr.json`).
+
+| Entité | Plateforme | Source (clé = chemin dans les données) | Classe | Unité | `state_class` | Activée par défaut | Accès |
+|---|---|---|---|---|---|---|---|
+| Wi-Fi activé | binary_sensor | `summary` → `wireless.radio` (`summary.wireless.radio`) | aucune | — | — | oui | public |
+| Wi-Fi invité activé | binary_sensor | `summary.wireless.guestenable` | aucune | — | — | oui | public |
+| Wi-Fi invité 2,4 GHz / 5 GHz | binary_sensor | `summary.wireless.guest24enable` / `guest5enable` | aucune | — | — | **non** | public |
+| SSID de compatibilité 2,4 GHz / 5 GHz | binary_sensor | `summary.wireless.compatibility24enable` / `compatibility5enable` | aucune | — | — | **non** | public |
+| WPS activé | binary_sensor | `wireless/wps` → `wps.wps.enable` | aucune | — | — | oui | public |
+| UPnP IGD activé | binary_sensor | `upnp/igd` → `upnp_igd.upnp.igd.enable` | problem | — | — | oui | public |
+| Lien FTTH | binary_sensor | `wan/ftth/stats` → `wan_ftth_stats.wan.ftth.state` (`Up`) | connectivity | — | — | oui | public |
+| IPv6 opérationnel | binary_sensor | `wan/ip` → `wan_ip.wan.ip.ip6state` + `ip6address` | aucune | — | — | oui | public |
+| Type de lien | sensor | `wan/ftth/stats` → `wan_ftth_stats.wan.ftth.mode` | aucune (catégorie diagnostic) | — | — | oui | public |
+| Débit contractuel descendant / montant | sensor | `wan/ip/stats` → `…{rx,tx}.contractualBandwidth` | data_rate | kb/s | aucun | oui | public |
+| Alertes | sensor | `alerts` → `alerts.alerts.list` (longueur) | aucune | — | measurement | oui | public |
+| Appareils connus | sensor | `summary` → `summary.hosts` (longueur) | aucune | — | measurement | oui | public |
+| Latence ping | sensor | `wan/diags` → `wan_diags.diags.ping` | duration | ms | measurement | oui | public |
+| Latence DNS / HTTP | sensor | `wan_diags.diags.dns` / `http` | duration | ms | measurement | **non** | public |
+| Trafic LAN reçu / émis | sensor | `lan/stats` → `lan_stats.lan.stats.{rx,tx}.bytes` (chaînes) | data_size | octets (affichage Go) | total_increasing | **non** | public |
+
+Règles :
+- **UPnP IGD** : sentinelle de sécurité. `PROBLEM` : « activé » s'affiche comme un problème (icône/état d'alerte), « désactivé » = normal. Pas de repli sur `summary.services.upnp.igd.enable` : si `upnp/igd` est absent, seule cette entité est indisponible.
+- **IPv6 opérationnel** : `on` si `wan.ip.ip6state` vaut `Up` **et** qu'au moins une adresse de `wan.ip.ip6address` est en `Preferred` (adresse valide, utilisable comme source). `ip6state` absent : inconnu ; `Up` sans adresse `Preferred` : `off`.
+- **Type de lien** : valeur brute de `wan.ftth.mode` (ex. `1000baseT-HD`, mode négocié du port optique), sans traduction. `summary.link.type` (`bosa`) n'est pas utilisé (même valeur dans `wan/ip.link.type`).
+- **Alertes** : longueur de `alerts.list` (`alerts`) ; à défaut (endpoint absent), `summary.alerts.count` s'il est entier. Sinon inconnu.
+- **Appareils connus** : nombre d'éléments de `summary.hosts` ; ni nom ni adresse n'est exposé (pas d'attribut). Ce n'est pas le nombre d'appareils *actifs*.
+- **Latences** : le « dernier point » est le **dernier élément** de la liste de la série (`ping`, `dns`, `http`) dans l'ordre renvoyé par la box (chronologique : les points vides sont en tête), quel que soit le protocole (la box alterne IPv4/IPv6, d'où un léger va-et-vient de la valeur). On prend `average`. Si ce point n'a pas de mesure (`tries` ou `success` à 0, `average` absent ou négatif), la série est vide ou le point invalide : état **inconnu**, jamais 0 ms. Unité : la box donne des valeurs de l'ordre de 6 000 à 25 000 ; elles sont lues comme des **microsecondes** (hypothèse non vérifiée : ping ≈ 7 ms, HTTP ≈ 23 ms), divisées par 1000.
+- **Trafic LAN** : les compteurs sont des chaînes d'entiers, convertis en `int` ; unité native octet, affichée en Go (unité suggérée à la création de l'entité). `rx`/`tx` sont du point de vue de la box. Le compteur peut repartir de zéro au redémarrage.
+- **Mode sans mot de passe** : ces entités sont les seules créées ; `hosts`, `wireless`, `speedtest/info` et `device/summary` ne sont pas lus, ni les device trackers ni le Speedtest créés (tests : `tests/test_public_sensors.py`, `tests/test_setup.py`). L'aide du config flow, du flux d'options et le message de ré-authentification indiquent ce que le mot de passe débloque.
+
+**À surveiller (relecture S3)** : le `unique_id` des ports Ethernet est bâti sur la **position** dans `ethernetPort` (`led.ethernetPort.{position}.state`) alors que l'état est cherché par l'`id`. Si la box réordonnait la liste, un port pourrait changer de nom (« Ethernet port N ») sans changer d'`unique_id` : accepté, à surveiller.
 
 ### Occupation de la bande passante : incertitudes
 

@@ -14,7 +14,7 @@ from pytest_homeassistant_custom_component.common import MockConfigEntry
 from custom_components.bbox.const import DOMAIN
 
 from .conftest import FakeBox
-from .const import LAN_MAC, MOCK_PUBLIC_INPUT, MOCK_USER_INPUT, SERIAL
+from .const import BOX_ID, LAN_MAC, MOCK_PUBLIC_INPUT, MOCK_USER_INPUT
 
 
 @pytest.fixture(autouse=True)
@@ -35,14 +35,15 @@ async def start(hass: HomeAssistant, user_input: dict):
 
 
 async def test_form_success_with_password(hass: HomeAssistant, router: FakeBox) -> None:
-    """With a password: login, the serial number identifies the box."""
+    """With a password: login, the LAN MAC address identifies the box."""
     result = await start(hass, MOCK_USER_INPUT)
 
     assert result["type"] == FlowResultType.CREATE_ENTRY
     assert result["title"] == "Bouygues Bbox"
     assert result["data"] == MOCK_USER_INPUT
-    assert result["result"].unique_id == SERIAL
+    assert result["result"].unique_id == BOX_ID
     assert router.count("login", "POST") == 1
+    assert router.count("device/summary") == 0
 
 
 async def test_form_success_without_password(
@@ -55,8 +56,17 @@ async def test_form_success_without_password(
 
     assert result["type"] == FlowResultType.CREATE_ENTRY
     assert result["data"]["password"] == ""
-    assert result["result"].unique_id == LAN_MAC
+    assert result["result"].unique_id == BOX_ID
     assert public_router.requests == [("GET", "lan/ip")]
+
+
+async def test_form_normalizes_the_mac_address(
+    hass: HomeAssistant, public_router: FakeBox
+) -> None:
+    """The identifier is the normalized MAC address, whatever its case."""
+    public_router.route("lan/ip", [{"lan": {"ip": {"mac": LAN_MAC.upper()}}}])
+    result = await start(hass, MOCK_PUBLIC_INPUT)
+    assert result["result"].unique_id == BOX_ID
 
 
 @pytest.mark.parametrize(
@@ -89,7 +99,7 @@ async def test_form_success_without_password(
         ({"status": 404}, "invalid_response"),
         ({"text": "<html>"}, "invalid_response"),
         # No identifier in the answer
-        ({"payload": [{"lan": {"ip": {}}}]}, "serialnumber"),
+        ({"payload": [{"lan": {"ip": {}}}]}, "no_identifier"),
     ],
 )
 async def test_form_errors_without_password(
@@ -153,12 +163,11 @@ async def test_form_cannot_connect(hass: HomeAssistant, router: FakeBox) -> None
     assert result["errors"] == {"base": "cannot_connect"}
 
 
-async def test_form_without_serialnumber(hass: HomeAssistant, router: FakeBox) -> None:
-    """Neither a serial number nor a MAC address: explicit error."""
-    router.route("device/summary", [{"device": {}}])
+async def test_form_without_identifier(hass: HomeAssistant, router: FakeBox) -> None:
+    """No LAN MAC address: explicit error."""
     router.route("lan/ip", [{"lan": {"ip": {}}}])
     result = await start(hass, MOCK_USER_INPUT)
-    assert result["errors"] == {"base": "serialnumber"}
+    assert result["errors"] == {"base": "no_identifier"}
 
 
 async def test_form_error_then_success(hass: HomeAssistant, router: FakeBox) -> None:
@@ -174,8 +183,8 @@ async def test_form_error_then_success(hass: HomeAssistant, router: FakeBox) -> 
 
 
 async def test_form_already_configured(hass: HomeAssistant, router: FakeBox) -> None:
-    """The flow aborts if the box (serial number) is already configured."""
-    MockConfigEntry(domain=DOMAIN, unique_id=SERIAL, data=MOCK_USER_INPUT).add_to_hass(
+    """The flow aborts if the box (LAN MAC address) is already configured."""
+    MockConfigEntry(domain=DOMAIN, unique_id=BOX_ID, data=MOCK_USER_INPUT).add_to_hass(
         hass
     )
     result = await start(hass, MOCK_USER_INPUT)
@@ -183,12 +192,12 @@ async def test_form_already_configured(hass: HomeAssistant, router: FakeBox) -> 
     assert result["reason"] == "already_configured"
 
 
-async def test_form_already_configured_by_mac(
+async def test_form_already_configured_without_password(
     hass: HomeAssistant, router: FakeBox
 ) -> None:
-    """A box configured without password (MAC) is detected when adding it with one."""
+    """A box configured without password is detected when adding it with one."""
     MockConfigEntry(
-        domain=DOMAIN, unique_id=LAN_MAC, data=MOCK_PUBLIC_INPUT
+        domain=DOMAIN, unique_id=BOX_ID, data=MOCK_PUBLIC_INPUT
     ).add_to_hass(hass)
     result = await start(hass, MOCK_USER_INPUT)
     assert result["type"] == FlowResultType.ABORT
@@ -254,7 +263,7 @@ async def start_reauth(hass: HomeAssistant, entry: MockConfigEntry):
 
 
 async def test_reauth_new_password(hass: HomeAssistant, router: FakeBox) -> None:
-    entry = MockConfigEntry(domain=DOMAIN, unique_id=SERIAL, data=MOCK_USER_INPUT)
+    entry = MockConfigEntry(domain=DOMAIN, unique_id=BOX_ID, data=MOCK_USER_INPUT)
     result = await start_reauth(hass, entry)
 
     result = await hass.config_entries.flow.async_configure(
@@ -264,11 +273,11 @@ async def test_reauth_new_password(hass: HomeAssistant, router: FakeBox) -> None
     assert result["type"] == FlowResultType.ABORT
     assert result["reason"] == "reauth_successful"
     assert entry.data["password"] == "new_password"
-    assert entry.unique_id == SERIAL
+    assert entry.unique_id == BOX_ID
 
 
 async def test_reauth_wrong_password(hass: HomeAssistant, router: FakeBox) -> None:
-    entry = MockConfigEntry(domain=DOMAIN, unique_id=SERIAL, data=MOCK_USER_INPUT)
+    entry = MockConfigEntry(domain=DOMAIN, unique_id=BOX_ID, data=MOCK_USER_INPUT)
     result = await start_reauth(hass, entry)
     router.route("login", status=401, method="POST")
 
@@ -283,7 +292,7 @@ async def test_reauth_wrong_password(hass: HomeAssistant, router: FakeBox) -> No
 
 async def test_reauth_without_password(hass: HomeAssistant, router: FakeBox) -> None:
     """The password is optional: empty switches to the public data only."""
-    entry = MockConfigEntry(domain=DOMAIN, unique_id=SERIAL, data=MOCK_USER_INPUT)
+    entry = MockConfigEntry(domain=DOMAIN, unique_id=BOX_ID, data=MOCK_USER_INPUT)
     result = await start_reauth(hass, entry)
     router.requests.clear()
 
@@ -292,14 +301,14 @@ async def test_reauth_without_password(hass: HomeAssistant, router: FakeBox) -> 
     assert result["type"] == FlowResultType.ABORT
     assert result["reason"] == "reauth_successful"
     assert entry.data["password"] == ""
-    # the box is now identified by its MAC address, like a new entry without password
-    assert entry.unique_id == LAN_MAC
+    # the identifier does not depend on the password
+    assert entry.unique_id == BOX_ID
     assert router.requests == [("GET", "lan/ip")]
 
 
 async def test_reauth_adds_a_password(hass: HomeAssistant, router: FakeBox) -> None:
-    """An entry without password can get one: the serial number replaces the MAC."""
-    entry = MockConfigEntry(domain=DOMAIN, unique_id=LAN_MAC, data=MOCK_PUBLIC_INPUT)
+    """An entry without password can get one: the identifier is unchanged."""
+    entry = MockConfigEntry(domain=DOMAIN, unique_id=BOX_ID, data=MOCK_PUBLIC_INPUT)
     result = await start_reauth(hass, entry)
 
     result = await hass.config_entries.flow.async_configure(
@@ -307,55 +316,43 @@ async def test_reauth_adds_a_password(hass: HomeAssistant, router: FakeBox) -> N
     )
 
     assert result["reason"] == "reauth_successful"
-    assert entry.unique_id == SERIAL
+    assert entry.data["password"] == "mock_password"
+    assert entry.unique_id == BOX_ID
 
 
-async def test_reauth_keeps_unique_id_used_by_another_entry(
-    hass: HomeAssistant, router: FakeBox
+@pytest.mark.parametrize("password", ["mock_password", ""])
+async def test_reauth_wrong_box(
+    hass: HomeAssistant, router: FakeBox, password: str
 ) -> None:
-    MockConfigEntry(domain=DOMAIN, unique_id=SERIAL, data=MOCK_USER_INPUT).add_to_hass(
-        hass
-    )
-    entry = MockConfigEntry(domain=DOMAIN, unique_id=LAN_MAC, data=MOCK_PUBLIC_INPUT)
-    result = await start_reauth(hass, entry)
-
-    result = await hass.config_entries.flow.async_configure(
-        result["flow_id"], {"password": "mock_password"}
-    )
-
-    assert result["reason"] == "reauth_successful"
-    assert entry.unique_id == LAN_MAC
-
-
-async def test_reauth_wrong_box(hass: HomeAssistant, router: FakeBox) -> None:
+    """Another box is detected, with or without password."""
     entry = MockConfigEntry(
-        domain=DOMAIN, unique_id="another-box", data=MOCK_USER_INPUT
+        domain=DOMAIN, unique_id="02:00:00:00:00:ff", data=MOCK_USER_INPUT
     )
     result = await start_reauth(hass, entry)
 
     result = await hass.config_entries.flow.async_configure(
-        result["flow_id"], {"password": "mock_password"}
+        result["flow_id"], {"password": password}
     )
 
     assert result["type"] == FlowResultType.ABORT
     assert result["reason"] == "wrong_account"
+    assert entry.data["password"] == MOCK_USER_INPUT["password"]
 
 
 async def test_reauth_without_identifier(hass: HomeAssistant, router: FakeBox) -> None:
-    entry = MockConfigEntry(domain=DOMAIN, unique_id=SERIAL, data=MOCK_USER_INPUT)
+    entry = MockConfigEntry(domain=DOMAIN, unique_id=BOX_ID, data=MOCK_USER_INPUT)
     result = await start_reauth(hass, entry)
-    router.route("device/summary", [{"device": {}}])
     router.route("lan/ip", [{}])
 
     result = await hass.config_entries.flow.async_configure(
         result["flow_id"], {"password": "mock_password"}
     )
-    assert result["errors"] == {"base": "serialnumber"}
+    assert result["errors"] == {"base": "no_identifier"}
 
 
 async def test_reauth_redirect(hass: HomeAssistant, router: FakeBox) -> None:
     """Reauth on an entry configured with an IP gets the explicit redirect error."""
-    entry = MockConfigEntry(domain=DOMAIN, unique_id=SERIAL, data=MOCK_USER_INPUT)
+    entry = MockConfigEntry(domain=DOMAIN, unique_id=BOX_ID, data=MOCK_USER_INPUT)
     result = await start_reauth(hass, entry)
     router.route("login", status=302, method="POST")
 
@@ -367,7 +364,7 @@ async def test_reauth_redirect(hass: HomeAssistant, router: FakeBox) -> None:
 
 async def test_options_flow(hass: HomeAssistant, router: FakeBox) -> None:
     """The options (refresh rate, device tracking) are unchanged."""
-    entry = MockConfigEntry(domain=DOMAIN, unique_id=SERIAL, data=MOCK_USER_INPUT)
+    entry = MockConfigEntry(domain=DOMAIN, unique_id=BOX_ID, data=MOCK_USER_INPUT)
     entry.add_to_hass(hass)
 
     result = await hass.config_entries.options.async_init(entry.entry_id)

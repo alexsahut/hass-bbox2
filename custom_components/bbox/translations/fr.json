@@ -12,7 +12,8 @@
         "data_description": {
           "host": "Utilisez mabbox.bytel.fr (et non l'adresse IP de la Bbox).",
           "password": "Laissez vide pour ne lire que les données publiques. Avec le mot de passe, les appareils connectés, l'état du Wi-Fi et le Speedtest sont aussi lus."
-        }
+        },
+        "description": "Laissez le mot de passe vide pour n'utiliser que les données publiques de la Bbox (lien Internet, Wi-Fi, UPnP/WPS, latences, trafic LAN...). Le mot de passe débloque en plus les appareils connectés (device trackers), l'état détaillé du Wi-Fi et le Speedtest."
       },
       "reauth_confirm": {
         "title": "Authentification de la Bbox",
@@ -25,7 +26,7 @@
     "error": {
       "cannot_connect": "Impossible de se connecter",
       "invalid_auth": "Authentification incorrect",
-      "serialnumber": "Impossible de récupérer le numéro de série de la Bbox via son API",
+      "no_identifier": "Impossible de récupérer l'adresse MAC LAN de la Bbox via son API",
       "redirect": "La Bbox a redirigé la requête (habituel avec son adresse IP). Utilisez plutôt le nom d'hôte mabbox.bytel.fr.",
       "dns_error": "Le nom d'hôte n'est pas résolu. Vérifiez le DNS de Home Assistant (mabbox.bytel.fr doit pointer vers la Bbox).",
       "invalid_response": "La réponse n'est pas une réponse valide de l'API Bbox."
@@ -43,7 +44,76 @@
         "data": {
           "refresh_rate": "Fréquence de rafraîchissement (en secondes)",
           "track_devices": "Suivre les appareils connectés (device tracker)"
+        },
+        "data_description": {
+          "track_devices": "Nécessite le mot de passe de la Bbox : sans lui, aucun appareil n'est suivi."
         }
+      }
+    }
+  },
+  "entity": {
+    "binary_sensor": {
+      "wifi_enabled": {
+        "name": "Wi-Fi activé"
+      },
+      "guest_wifi_enabled": {
+        "name": "Wi-Fi invité activé"
+      },
+      "guest_wifi_24_enabled": {
+        "name": "Wi-Fi invité 2,4 GHz activé"
+      },
+      "guest_wifi_5_enabled": {
+        "name": "Wi-Fi invité 5 GHz activé"
+      },
+      "compatibility_ssid_24_enabled": {
+        "name": "SSID de compatibilité 2,4 GHz activé"
+      },
+      "compatibility_ssid_5_enabled": {
+        "name": "SSID de compatibilité 5 GHz activé"
+      },
+      "wps_enabled": {
+        "name": "WPS activé"
+      },
+      "upnp_igd_enabled": {
+        "name": "UPnP IGD activé"
+      },
+      "ftth_link": {
+        "name": "Lien FTTH"
+      },
+      "ipv6_ready": {
+        "name": "IPv6 opérationnel"
+      }
+    },
+    "sensor": {
+      "link_type": {
+        "name": "Type de lien"
+      },
+      "contractual_download": {
+        "name": "Débit contractuel descendant"
+      },
+      "contractual_upload": {
+        "name": "Débit contractuel montant"
+      },
+      "alerts": {
+        "name": "Alertes"
+      },
+      "known_devices": {
+        "name": "Appareils connus"
+      },
+      "latency_ping": {
+        "name": "Latence ping"
+      },
+      "latency_dns": {
+        "name": "Latence DNS"
+      },
+      "latency_http": {
+        "name": "Latence HTTP"
+      },
+      "lan_received": {
+        "name": "Trafic LAN reçu"
+      },
+      "lan_sent": {
+        "name": "Trafic LAN émis"
       }
     }
   }
