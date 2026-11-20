@@ -15,7 +15,7 @@ from custom_components.bbox.const import DOMAIN
 
 from .common import setup_entry
 from .conftest import FakeBox
-from .const import DEVICE_WITH_SERIAL, PUBLIC_ANSWERS, SERIAL
+from .const import BOX_ID, DEVICE_WITH_SERIAL, PUBLIC_ANSWERS, SERIAL
 
 
 async def test_sensors_state(
@@ -39,14 +39,14 @@ async def test_sensors_state(
     assert hass.states.get("sensor.bbox_boot_counter").state == "14"
 
 
-async def test_unique_ids_use_the_serial_number(
+async def test_unique_ids_use_the_lan_mac_address(
     hass: HomeAssistant, config_entry: ConfigEntry, router: FakeBox
 ) -> None:
-    """The unique ids are unchanged: serial number of `device` + key (S5 reworks them)."""
+    """The unique ids are the LAN MAC address of the box + key."""
     await setup_entry(hass, config_entry)
     registry = er.async_get(hass)
     entity = registry.async_get("sensor.bbox_ip_address")
-    assert entity.unique_id == f"{SERIAL}-wan_ip.wan.ip.address"
+    assert entity.unique_id == f"{BOX_ID}-wan_ip.wan.ip.address"
 
 
 async def test_public_mode_has_no_speedtest_sensor(
@@ -64,8 +64,8 @@ async def test_public_mode_has_no_speedtest_sensor(
     }
     assert not any("speedtest" in uid for uid in unique_ids)
     assert hass.states.get("sensor.bbox_ip_address").state == "203.0.113.46"
-    # no password: the `device` answer has no serial number
-    assert "ABC12345-wan_ip.wan.ip.address" in unique_ids
+    # no password: the `device` answer has no serial number, same unique ids
+    assert f"{BOX_ID}-wan_ip.wan.ip.address" in unique_ids
 
 
 async def test_password_sensors_are_created_with_password(
@@ -77,7 +77,7 @@ async def test_password_sensors_are_created_with_password(
     entity_id = registry.async_get_entity_id(
         "sensor",
         DOMAIN,
-        f"{SERIAL}-speedtest_infos.speedtest.latestmeasurements.download.0.speed",
+        f"{BOX_ID}-speedtest_infos.speedtest.latestmeasurements.download.0.speed",
     )
     assert entity_id is not None
 
@@ -89,7 +89,7 @@ async def test_password_removal_cleans_the_speedtest_sensor(
     await setup_entry(hass, config_entry)
     registry = er.async_get(hass)
     unique_id = (
-        f"{SERIAL}-speedtest_infos.speedtest.latestmeasurements.download.0.speed"
+        f"{BOX_ID}-speedtest_infos.speedtest.latestmeasurements.download.0.speed"
     )
     assert registry.async_get_entity_id("sensor", DOMAIN, unique_id)
 
@@ -162,7 +162,7 @@ async def test_boot_time_replaces_uptime(
     registry = er.async_get(hass)
     # an entity of the former Uptime sensor is left in the registry
     registry.async_get_or_create(
-        "sensor", DOMAIN, f"{SERIAL}-info.device.uptime", config_entry=config_entry
+        "sensor", DOMAIN, f"{BOX_ID}-info.device.uptime", config_entry=config_entry
     )
     await setup_entry(hass, config_entry)
 
@@ -171,11 +171,11 @@ async def test_boot_time_replaces_uptime(
     assert state.attributes["device_class"] == SensorDeviceClass.TIMESTAMP
     assert "state_class" not in state.attributes
     assert registry.async_get("sensor.bbox_last_boot").unique_id == (
-        f"{SERIAL}-info.device.boot_time"
+        f"{BOX_ID}-info.device.boot_time"
     )
     # the former sensor is removed
     assert (
-        registry.async_get_entity_id("sensor", DOMAIN, f"{SERIAL}-info.device.uptime")
+        registry.async_get_entity_id("sensor", DOMAIN, f"{BOX_ID}-info.device.uptime")
         is None
     )
     assert hass.states.get("sensor.bbox_uptime") is None
@@ -249,7 +249,7 @@ async def test_occupation_percent_and_raw(
     assert "device_class" not in rx.attributes
     assert (
         registry.async_get("sensor.bbox_download_bandwidth_occupation").unique_id
-        == f"{SERIAL}-wan_ip_stats.wan.ip.stats.rx.occupation"
+        == f"{BOX_ID}-wan_ip_stats.wan.ip.stats.rx.occupation"
     )
 
     # raw fields: disabled by default, no unit
@@ -261,7 +261,7 @@ async def test_occupation_percent_and_raw(
         assert entity.unit_of_measurement is None
         registry.async_update_entity(entity_id, disabled_by=None)
     assert registry.async_get("sensor.bbox_download_occupation_raw").unique_id == (
-        f"{SERIAL}-wan_ip_stats.wan.ip.stats.rx.occupation_raw"
+        f"{BOX_ID}-wan_ip_stats.wan.ip.stats.rx.occupation_raw"
     )
     await hass.config_entries.async_reload(config_entry.entry_id)
     await hass.async_block_till_done()

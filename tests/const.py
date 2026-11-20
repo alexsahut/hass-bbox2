@@ -3,6 +3,7 @@
 import json
 from pathlib import Path
 
+from homeassistant.helpers.device_registry import format_mac
 from pytest_homeassistant_custom_component.common import load_json_object_fixture
 
 FIXTURES = Path(__file__).parent / "fixtures"
@@ -34,6 +35,8 @@ PUBLIC_ANSWERS = {
 
 SERIAL = "012345678901234"
 LAN_MAC = PUBLIC_ANSWERS["lan/ip"][0]["lan"]["ip"]["mac"]
+# Identifier of the box (entry, device, prefix of the unique_ids): LAN MAC address
+BOX_ID = format_mac(LAN_MAC)
 
 # Endpoints which need a password: no real capture exists, the older fixtures
 # (upstream data) are used. With a password, `device` also gives the serial.

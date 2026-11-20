@@ -23,15 +23,17 @@ from homeassistant.const import (
     EntityCategory,
 )
 from homeassistant.core import HomeAssistant
+from homeassistant.helpers import device_registry as dr
 from homeassistant.helpers import entity_registry as er
 
 from custom_components.bbox.binary_sensor import BINARY_SENSOR_TYPES
+from custom_components.bbox.const import DOMAIN
 from custom_components.bbox.coordinator import AUTHENTICATED_ENDPOINTS
 from custom_components.bbox.sensor import SENSOR_TYPES
 
 from .common import setup_entry
 from .conftest import FakeBox
-from .const import PUBLIC_ANSWERS, SERIAL
+from .const import BOX_ID, PUBLIC_ANSWERS, SERIAL
 
 COMPONENT = Path(__file__).parent.parent / "custom_components" / "bbox"
 
@@ -70,7 +72,7 @@ DISABLED = {
     "lan_stats.lan.stats.tx.bytes",
 }
 
-# unique_id (after the serial number) of every entity before S6: frozen
+# unique_id (after the LAN MAC address of the box) of every entity before S6
 EXISTING_KEYS = {
     "sensor": {
         "info.device.temperature.current",
@@ -111,7 +113,7 @@ def _registry_ids(hass: HomeAssistant, entry: ConfigEntry, domain: str):
 
 
 def _state(hass: HomeAssistant, entry: ConfigEntry, domain: str, key: str):
-    entity = _registry_ids(hass, entry, domain)[f"{SERIAL}-{key}"]
+    entity = _registry_ids(hass, entry, domain)[f"{BOX_ID}-{key}"]
     return hass.states.get(entity.entity_id)
 
 
@@ -165,7 +167,7 @@ async def test_sensor_classes_and_defaults(
         **_registry_ids(hass, config_entry, "binary_sensor"),
     }
     for key in (*NEW_BINARY, *NEW_SENSORS):
-        entity = ids[f"{SERIAL}-{key}"]
+        entity = ids[f"{BOX_ID}-{key}"]
         assert bool(entity.disabled_by) == (key in DISABLED), key
 
     by_key = {d.key: d for d in SENSOR_TYPES}
@@ -210,20 +212,63 @@ async def test_translations_cover_every_new_entity() -> None:
 async def test_unique_ids_of_existing_entities_are_frozen(
     hass: HomeAssistant, config_entry: ConfigEntry, router: FakeBox
 ) -> None:
-    """The unique_id of every entity which existed before S6 is unchanged."""
+    """Every entity keeps its key; the prefix is the LAN MAC address of the box."""
     await setup_entry(hass, config_entry)
     for domain, keys in EXISTING_KEYS.items():
         registered = set(_registry_ids(hass, config_entry, domain))
-        assert {f"{SERIAL}-{key}" for key in keys} <= registered, domain
+        assert {f"{BOX_ID}-{key}" for key in keys} <= registered, domain
         if domain != "button":
             # the other unique_ids are the new ones, built the same way
             new = NEW_BINARY if domain == "binary_sensor" else NEW_SENSORS
-            assert registered - {f"{SERIAL}-{key}" for key in keys} == {
-                f"{SERIAL}-{key}" for key in new
+            assert registered - {f"{BOX_ID}-{key}" for key in keys} == {
+                f"{BOX_ID}-{key}" for key in new
             }
     trackers = set(_registry_ids(hass, config_entry, "device_tracker"))
     # the unique_id of a tracker is the MAC address (ScannerEntity)
     assert trackers == {"00:01:02:03:04:0e", "01:02:03:04:05:06", "01:02:03:04:05:f9"}
+
+
+async def test_unique_ids_do_not_depend_on_the_password(
+    hass: HomeAssistant, config_entry: ConfigEntry, router: FakeBox
+) -> None:
+    """Removing the password keeps the box device and the public entities."""
+    await setup_entry(hass, config_entry)
+    registry = er.async_get(hass)
+    before = {
+        e.unique_id: e.entity_id
+        for e in er.async_entries_for_config_entry(registry, config_entry.entry_id)
+        if e.domain in ("sensor", "binary_sensor", "button")
+    }
+    device_registry = dr.async_get(hass)
+    box = device_registry.async_get_device_by_identifier(
+        (DOMAIN, BOX_ID), config_entry.entry_id
+    )
+    assert box.serial_number == SERIAL  # read in `device` with the password
+
+    router.route("device", PUBLIC_ANSWERS["device"])  # no serial number without it
+    hass.config_entries.async_update_entry(
+        config_entry, data={**config_entry.data, "password": ""}
+    )
+    await hass.config_entries.async_reload(config_entry.entry_id)
+    await hass.async_block_till_done()
+
+    after = {
+        e.unique_id: e.entity_id
+        for e in er.async_entries_for_config_entry(registry, config_entry.entry_id)
+        if e.domain in ("sensor", "binary_sensor", "button")
+    }
+    # same unique_ids and entity_ids: only the sensors needing a password are gone
+    assert after == {uid: eid for uid, eid in before.items() if "speedtest" not in uid}
+    assert all(uid.startswith(f"{BOX_ID}-") for uid in after)
+    devices = dr.async_entries_for_config_entry(device_registry, config_entry.entry_id)
+    assert [d.id for d in devices if (DOMAIN, BOX_ID) in d.identifiers] == [box.id]
+    assert config_entry.unique_id == BOX_ID
+
+
+def test_no_placeholder_identifier_in_the_code() -> None:
+    """The identifier of the box is never a fixed placeholder value."""
+    for path in COMPONENT.rglob("*.py"):
+        assert "ABC12345" not in path.read_text(), path
 
 
 async def test_no_password_creates_only_public_entities(
@@ -248,7 +293,7 @@ async def test_no_password_creates_only_public_entities(
     assert not [e for e in entries if "speedtest" in e.unique_id]
     unique_ids = {e.unique_id for e in entries}
     for key in (*NEW_BINARY, *NEW_SENSORS):
-        assert f"ABC12345-{key}" in unique_ids, key
+        assert f"{BOX_ID}-{key}" in unique_ids, key
     # every public entity has a state read from the box (none unavailable)
     for entity in entries:
         if entity.disabled_by is None:

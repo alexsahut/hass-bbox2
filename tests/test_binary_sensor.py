@@ -9,7 +9,7 @@ from homeassistant.helpers import entity_registry as er
 
 from .common import setup_entry
 from .conftest import FakeBox
-from .const import DEVICE_WITH_SERIAL, PUBLIC_ANSWERS, SERIAL
+from .const import BOX_ID, DEVICE_WITH_SERIAL, PUBLIC_ANSWERS
 
 
 def _port_entities(registry, config_entry):
@@ -27,7 +27,7 @@ async def test_binary_sensor_link_status(
     await setup_entry(hass, config_entry)
     assert hass.states.get("binary_sensor.bbox_link_status").state == STATE_ON
     entity = er.async_get(hass).async_get("binary_sensor.bbox_link_status")
-    assert entity.unique_id == f"{SERIAL}-info.device.status"
+    assert entity.unique_id == f"{BOX_ID}-info.device.status"
 
     # device.status (box state) no longer matters
     device = copy.deepcopy(DEVICE_WITH_SERIAL)
@@ -119,8 +119,8 @@ async def test_ethernet_ports_follow_the_box(
         if e.entity_id.startswith("binary_sensor.bbox_ethernet_port")
     }
     assert ports == {
-        f"{SERIAL}-led.ethernetPort.0.state",
-        f"{SERIAL}-led.ethernetPort.1.state",
+        f"{BOX_ID}-led.ethernetPort.0.state",
+        f"{BOX_ID}-led.ethernetPort.1.state",
     }
     assert registry.async_get("binary_sensor.bbox_ethernet_port_3") is None
 

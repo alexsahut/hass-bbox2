@@ -26,7 +26,7 @@
     "error": {
       "cannot_connect": "Impossible de se connecter",
       "invalid_auth": "Authentification incorrect",
-      "serialnumber": "Impossible de récupérer le numéro de série de la Bbox via son API",
+      "no_identifier": "Impossible de récupérer l'adresse MAC LAN de la Bbox via son API",
       "redirect": "La Bbox a redirigé la requête (habituel avec son adresse IP). Utilisez plutôt le nom d'hôte mabbox.bytel.fr.",
       "dns_error": "Le nom d'hôte n'est pas résolu. Vérifiez le DNS de Home Assistant (mabbox.bytel.fr doit pointer vers la Bbox).",
       "invalid_response": "La réponse n'est pas une réponse valide de l'API Bbox."

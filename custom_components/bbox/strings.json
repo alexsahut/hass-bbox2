@@ -24,7 +24,7 @@
     "error": {
       "cannot_connect": "[%key:common::config_flow::error::cannot_connect%]",
       "invalid_auth": "[%key:common::config_flow::error::invalid_auth%]",
-      "serialnumber": "Failed to retrieve Bbox serialnumber via its API",
+      "no_identifier": "Failed to retrieve the LAN MAC address of the Bbox via its API",
       "redirect": "The Bbox redirected the request (usual when using its IP address). Use the host name mabbox.bytel.fr instead.",
       "dns_error": "The host name can not be resolved. Check the DNS of Home Assistant (mabbox.bytel.fr must resolve to the Bbox).",
       "invalid_response": "The answer is not a valid Bbox API response."

@@ -32,13 +32,15 @@ class BboxEntity(CoordinatorEntity[BboxDataUpdateCoordinator], Entity):
         )
 
         device = finditem(coordinator.data, "info.device") or {}
-        self.box_id = device.get("serialnumber", "ABC12345")
+        # LAN MAC address: the same with or without password
+        self.box_id = coordinator.box_id
         self._attr_unique_id = f"{self.box_id}-{description.key}"
         self._attr_device_info = {
             "identifiers": {(DOMAIN, self.box_id)},
             "manufacturer": MANUFACTURER,
             "name": BBOX_NAME,
             "model": device.get("modelname"),
+            "serial_number": device.get("serialnumber"),
             "sw_version": device.get("main", {}).get("version"),
             "configuration_url": f"https://{coordinator.config_entry.data[CONF_HOST]}",
         }
