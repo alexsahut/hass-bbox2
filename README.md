@@ -3,77 +3,136 @@
 > [cyr-ius/hass-bbox2](https://github.com/cyr-ius/hass-bbox2) : un grand merci à
 > [cyr-ius](https://github.com/cyr-ius) pour le travail d'origine. Licence MIT conservée.
 > Ce fork est indépendant et n'est pas supporté par l'auteur amont.
-> Installation : ajouter ce dépôt comme dépôt personnalisé (catégorie « Integration »)
-> dans HACS / la Marketplace de Home Assistant.
 
-# Bouygues Bbox Router
+# Bouygues Bbox Router (read-only)
 
-This a _custom component_ for [Home Assistant](https://www.home-assistant.io/).
-The `bbox2` integration allows you to observe [Bbox router](http://www.bouygues.fr/).
+This is a _custom integration_ for [Home Assistant](https://www.home-assistant.io/) to monitor a
+[Bouygues Telecom Bbox](https://www.bouyguestelecom.fr/) router: WAN link, traffic, latencies,
+Wi-Fi/WPS/UPnP state, system health and, with the password, presence detection.
 
-There is currently support for the following device types within Home Assistant:
+![GitHub release](https://img.shields.io/github/release/alexsahut/hass-bbox2)
 
-- Sensor with traffic metrics
-- Binary Sensor with wan status , public ip , private ip
-- Device tracker for connected devices (via option add wired devices)
-- Press button to refresh the data (only queries the box)
+Changes since upstream 1.5.4 and incompatibilities: see [CHANGELOG.md](CHANGELOG.md).
 
-This fork is **read-only**: it never writes anything to the box (no Wi-Fi, WPS, parental control switch, no restart).
+## Read-only guarantee
 
-![GitHub release](https://img.shields.io/github/release/Cyr-ius/hass-bbox2)
-[![hacs_badge](https://img.shields.io/badge/HACS-Default-bouygues.svg)](https://github.com/hacs/integration)
-![downloads](https://img.shields.io/badge/dynamic/json?color=41BDF5&logo=home-assistant&label=integration%20usage&suffix=%20installs&cacheSeconds=15600&url=https://analytics.home-assistant.io/custom_integrations.json&query=$.bbox.total)
+This fork **never writes anything to the box**: no Wi-Fi, WPS or parental control switch, no restart.
 
-## Configuration
+- The integration only sends HTTP `GET` requests. The only `POST` is the login, and only when a
+  password is configured. The client (`api.py`) refuses any other request, and the tests fail if one
+  is sent.
+- The only button, **Refresh**, just queries the box again.
+- No Python dependency (`bboxpy` is not used).
 
-The preferred way to setup the Bouygues Bbox platform is by enabling the discovery component.
+## Installation
 
-Add Bouygues Bbox module via HACS
+Install it from the Home Assistant Marketplace (HACS) as a **custom repository**:
+
+1. Open the Marketplace (HACS), menu ⋮ → **Custom repositories**.
+2. Repository: `https://github.com/alexsahut/hass-bbox2`, category **Integration**, then **Add**.
+3. Open **Bouygues Bbox** in the list, **Download**, and pick the latest release.
+4. Restart Home Assistant.
 
 [![Open your Home Assistant instance and open a repository inside the Home Assistant Community Store.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=alexsahut&repository=hass-bbox2&category=integration)
 
-Add your device via the Integration menu
+The Marketplace installs the `bbox.zip` archive of a published release, never the current state of
+`master`.
 
-[![Open your Home Assistant instance and start setting up a new integration.](https://my.home-assistant.io/badges/config_flow_start.svg)](https://my.home-assistant.io/redirect/config_flow_start/?domain=bbox2)
+The integration keeps the domain `bbox`, so it **overrides** the native `bbox` integration of Home
+Assistant. At startup Home Assistant logs that a custom integration `bbox` overrides the core
+integration: this warning is expected.
 
-### Initial setup
+## Configuration
 
-Use the host name **`mabbox.bytel.fr`** (default) with TLS. The Bbox answers a redirect (`302`) to
-`mabbox.bytel.fr` when it is queried by its IP address: the setup then shows an explicit error asking
-to use that name. Your DNS must resolve `mabbox.bytel.fr` to the Bbox (an error says so otherwise).
+**Settings → Devices & services → Add integration → Bouygues Bbox.**
 
-The **password is optional**:
+[![Open your Home Assistant instance and start setting up a new integration.](https://my.home-assistant.io/badges/config_flow_start.svg)](https://my.home-assistant.io/redirect/config_flow_start/?domain=bbox)
 
-- **Without password**: only the public data of the box are read (state of the link, IP addresses,
-  traffic, uptime, firmware, temperature, memory, Ethernet ports, WPS). No device tracker and no
-  Speedtest sensor are created.
-- **With the password of the Bbox web administration page**: the connected devices (device
-  tracker), the Wi-Fi state and the Speedtest are read in addition.
+### Host: `mabbox.bytel.fr`, not the IP address
 
-The password can be added, changed or removed later from the re-authentication form.
+Use the host name **`mabbox.bytel.fr`** (default) with TLS. When it is queried by its IP address,
+the Bbox answers a redirect (`302`) to `mabbox.bytel.fr`, and its certificate is issued for that
+name: the setup then shows an explicit error asking to use the name. Your DNS must resolve
+`mabbox.bytel.fr` to the Bbox (an error says so otherwise).
 
-The integration only reads the box (HTTP `GET`). The only `POST` is the login, when a password is set.
+### Password (optional)
+
+- **Without password**: only the public data of the box are read: WAN link, IP addresses, traffic,
+  uptime, firmware, temperature, memory, Ethernet ports, Wi-Fi/WPS/UPnP state, latencies, LAN
+  traffic, alerts. No device tracker and no Speedtest sensor are created.
+- **With the password of the Bbox web administration page**, the integration also reads the
+  connected devices (device trackers), the detailed Wi-Fi state and the Speedtest.
+
+The field is masked, and the password is redacted from the diagnostics. When the box refuses the
+password, Home Assistant opens the re-authentication form, where it can be changed or removed. To add
+a password to an entry set up without one, delete the entry and add the integration again. The
+identifier of the box (its LAN MAC address) does not depend on the password: the entities keep their
+`unique_id` with or without it.
+
+### Options
+
+- **Refresh rate** (seconds, default 60).
+- **Track connected devices** (device trackers, default on, needs the password).
 
 ### Supported routers
 
-Only the routers with Bbox OS are supported:
+Bbox with Bbox OS. Tested on the Sagemcom **F@st 5696b** (FTTH).
 
-- Bbox (all versions)
+## Entities
 
-## Presence Detection
+The detail (source endpoint, classes, units, rules) is in
+[`docs/maintenance/maintenance.md`](docs/maintenance/maintenance.md), section 7.
+Entities marked _disabled_ are created disabled by default.
 
-This platform offers presence detection by keeping track of the
-devices connected to a [Bbox](http://www.bouygues.fr/) router.
+### Without password
 
-Presence detection needs the password. Ability to disable this option by integration options ("Track connected devices").
+| Entity | Type | Notes |
+|---|---|---|
+| Link status | binary_sensor | WAN link `Up` |
+| Lien FTTH | binary_sensor | optical link state |
+| IPv6 opérationnel | binary_sensor | IPv6 up with a usable address |
+| Wi-Fi activé, Wi-Fi invité activé | binary_sensor | |
+| Wi-Fi invité 2,4 GHz / 5 GHz | binary_sensor | _disabled_ |
+| SSID de compatibilité 2,4 GHz / 5 GHz | binary_sensor | _disabled_ |
+| WPS activé | binary_sensor | |
+| UPnP IGD activé | binary_sensor | security sentinel: "on" is shown as a problem |
+| Ethernet port N | binary_sensor | one per port, _disabled_ |
+| System Temperature | sensor | °C |
+| Downloaded / Uploaded | sensor | kB, total |
+| Download / Upload speed | sensor | kb/s |
+| Download / Upload bandwidth occupation | sensor | % of the contractual rate |
+| Download / Upload occupation (raw) | sensor | raw value of the box, _disabled_ |
+| Download / Upload discard packet, error packet | sensor | _disabled_ |
+| Débit contractuel descendant / montant | sensor | kb/s |
+| Type de lien | sensor | e.g. `1000baseT-HD`, diagnostic |
+| IP Address, IPv6 Address | sensor | public addresses |
+| Boot counter, Last boot | sensor | |
+| Memory free | sensor | % |
+| Alertes | sensor | number of alerts |
+| Appareils connus | sensor | number of known hosts (no name exposed) |
+| Latence ping | sensor | ms |
+| Latence DNS / HTTP | sensor | ms, _disabled_ |
+| Trafic LAN reçu / émis | sensor | bytes, _disabled_ |
+| Refresh | button | queries the box again |
 
-### Notes
+### With password (in addition)
 
-Note that the Bbox waits for some time before marking a device as inactive, meaning that there will be a small delay (1 or 2 minutes) between the time you disconnect a device and the time it will appear as "away" in Home Assistant.
+| Entity | Type | Notes |
+|---|---|---|
+| Connected devices | device_tracker | one per host, option "Track connected devices" |
+| Speedtest download | sensor | kb/s, _disabled_ |
 
-You should take this into account when specifying the `consider_home` parameter.
-On the contrary, the Bbox immediately reports devices newly connected, so they should appear as "home" almost instantly, as soon as Home Assistant refreshes the devices states.
+## Presence detection
 
-## Sensor
+Device trackers need the password and the option **Track connected devices**.
 
-This platform offers you sensors to monitor a Bbox router. The monitored conditions are instant upload and download rates in kb/s. The public sensors (Wi-Fi, WPS, UPnP, FTTH/IPv6 link, contractual rates, alerts, latencies, LAN traffic...) work without a password. The detail of the sensors (source, classes, units, enabled by default, public or authenticated) is in `docs/maintenance/maintenance.md`, section 7.
+The Bbox waits for some time before marking a device as inactive: there is a small delay (1 or
+2 minutes) between the time you disconnect a device and the time it appears as "away" in Home
+Assistant. Take it into account for `consider_home`. Newly connected devices are reported
+immediately and appear as "home" at the next refresh.
+
+## Diagnostics
+
+**Settings → Devices & services → Bouygues Bbox → ⋮ → Download diagnostics** gives the raw data read
+from the box, with the sensitive fields redacted (password, tokens, SSID, names, IP addresses, serial
+number, MAC addresses…).

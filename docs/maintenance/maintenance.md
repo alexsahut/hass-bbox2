@@ -30,7 +30,7 @@ Reporter un correctif : ne jamais fusionner `upstream/master` en bloc. Créer un
 
 ## 3. Politique de version
 
-- Versions `MAJOR.MINOR.PATCH` dans `manifest.json`, `1.6.0-dev` pendant le développement.
+- Versions `MAJOR.MINOR.PATCH` dans `manifest.json` ; suffixe `-dev` (ex. `2.1.0-dev`) pendant le développement. Première version du fork : `2.0.0` (MAJOR : entités supprimées et `unique_id` changés par rapport à l'amont 1.5.4). Chaque version est décrite dans `CHANGELOG.md`.
 - PATCH : correctif ou compatibilité HA ; MINOR : nouvelle entité ou nouveau capteur ; MAJOR : changement incompatible (entités supprimées, domaine, etc.).
 - Publication : mettre à jour `version` dans `manifest.json`, fusionner, puis créer le tag `X.Y.Z` ; `release.yml` crée la release GitHub avec `bbox.zip`. `hacs.json` déclare `"zip_release": true` et `"filename": "bbox.zip"` : la Marketplace installe exactement cette archive (le code publié est celui du tag), et ne propose que les versions publiées en release, jamais l'état courant de `master`.
 - `hacs.json` : version minimale de HA relevée seulement quand le code l'exige.
@@ -57,10 +57,10 @@ Endpoints lus à chaque cycle :
 
 | Mode | Endpoints (`/api/v1/…`) |
 |---|---|
-| Sans mot de passe (publics) | `device`, `device/cpu`, `device/mem`, `device/led`, `wan/ip`, `wan/ip/stats`, `summary`, `wireless/wps`, `upnp/igd`, `wan/ftth/stats`, `wan/diags`, `lan/stats`, `alerts` (S6) |
+| Sans mot de passe (publics) | `device`, `device/cpu`, `device/mem`, `device/led`, `wan/ip`, `wan/ip/stats`, `summary`, `wireless/wps`, `upnp/igd`, `wan/ftth/stats`, `wan/diags`, `lan/stats`, `alerts` (S6), `lan/ip` (identifiant) |
 | Avec mot de passe (en plus) | `hosts`, `wireless`, `speedtest/info`, `device/summary` |
 
-`parentalcontrol` n'est plus lu. En plus, le config flow lit `lan/ip` (public, adresse MAC LAN) et, avec mot de passe, `device/summary` (numéro de série) ; les diagnostics lisent quelques endpoints supplémentaires, toujours en `GET` (`lan/stats` et `wan/ftth/stats` n'en font plus partie depuis S6 : le coordinateur les lit déjà).
+`parentalcontrol` n'est plus lu. En plus, le config flow lit `lan/ip` (public, adresse MAC LAN) ; les diagnostics lisent quelques endpoints supplémentaires, toujours en `GET` (`lan/stats` et `wan/ftth/stats` n'en font plus partie depuis S6 : le coordinateur les lit déjà).
 
 **Sans mot de passe**, les entités qui dépendent d'un endpoint authentifié ne sont pas créées (Speedtest download, device trackers) et celles déjà enregistrées sont retirées du registre.
 
@@ -68,11 +68,11 @@ Endpoints lus à chaque cycle :
 
 **Tolérance par endpoint** : le coordinateur lit chaque endpoint indépendamment. Un endpoint en erreur (404, timeout, JSON invalide…) ne rend indisponibles que les entités qui en dépendent ; l'erreur est journalisée une fois, puis la reprise. Un `404` est définitif : l'endpoint n'est plus demandé (modèle sans cette fonction). `UpdateFailed` seulement si aucun endpoint n'a répondu.
 
-**Identifiant de la box** : avec mot de passe, `unique_id` de l'entrée = numéro de série (`device/summary`) ; sans mot de passe, adresse MAC LAN (`lan/ip`, public). Les `unique_id` des entités ne changent pas dans cette story (`{numéro de série}-{clé}`, ou `ABC12345-{clé}` si `device` ne donne pas le numéro de série, ce qui est le cas sans mot de passe) : leur refonte est l'objet de S5.
+**Identifiant de la box** : adresse MAC LAN (`lan/ip` → `lan.ip.mac`, public), normalisée par `format_mac`, avec ou sans mot de passe. Elle sert de `unique_id` à l'entrée, d'identifiant à l'appareil Bbox, et de préfixe aux `unique_id` des entités (`{MAC}-{clé}`) et des device trackers. Le numéro de série n'est qu'une information de l'appareil (`serial_number`, lu dans `device` avec mot de passe). Ré-authentification : l'identifiant ne change pas ; une MAC différente de celle de l'entrée donne `wrong_account`. Pas de conversion depuis l'identifiant amont (numéro de série ou `ABC12345`) : aucune instance n'était installée (incompatibilité notée dans `CHANGELOG.md`).
 
 ## 7. Capteurs (S3)
 
-| Entité | Source | Classe | Unité | `state_class` | Activée par défaut | `unique_id` (après le n° de série) |
+| Entité | Source | Classe | Unité | `state_class` | Activée par défaut | `unique_id` (après la MAC LAN) |
 |---|---|---|---|---|---|---|
 | System Temperature | `device` / `device/cpu` | temperature | °C | measurement | oui | `info.device.temperature.current` |
 | Downloaded / Uploaded | `wan/ip/stats` | data_size | kB | total_increasing | oui | `wan_ip_stats.wan.ip.stats.{rx,tx}.bytes` |
@@ -96,7 +96,7 @@ Endpoints lus à chaque cycle :
 
 ### Capteurs publics (S6)
 
-Tous lisibles sans mot de passe (`unique_id` = `{numéro de série, ou ABC12345 sans mot de passe}-{clé}`). Les noms viennent des `translation_key` (`strings.json`, `translations/en.json`, `translations/fr.json`).
+Tous lisibles sans mot de passe (`unique_id` = `{MAC LAN}-{clé}`). Les noms viennent des `translation_key` (`strings.json`, `translations/en.json`, `translations/fr.json`).
 
 | Entité | Plateforme | Source (clé = chemin dans les données) | Classe | Unité | `state_class` | Activée par défaut | Accès |
 |---|---|---|---|---|---|---|---|
