@@ -1,6 +1,11 @@
 """Tests for the Bbox sensor platform."""
 
+import copy
+from datetime import UTC, datetime, timedelta
+from pathlib import Path
+
 import pytest
+from homeassistant.components.sensor import SensorDeviceClass, SensorStateClass
 from homeassistant.config_entries import ConfigEntry, ConfigEntryState
 from homeassistant.const import STATE_UNAVAILABLE, STATE_UNKNOWN
 from homeassistant.core import HomeAssistant
@@ -10,7 +15,7 @@ from custom_components.bbox.const import DOMAIN
 
 from .common import setup_entry
 from .conftest import FakeBox
-from .const import SERIAL
+from .const import DEVICE_WITH_SERIAL, PUBLIC_ANSWERS, SERIAL
 
 
 async def test_sensors_state(
@@ -133,3 +138,206 @@ async def test_sensor_unavailable_without_its_endpoint(
     assert hass.states.get("sensor.bbox_memory_free").state == STATE_UNAVAILABLE
     assert hass.states.get("sensor.bbox_ip_address").state == "203.0.113.46"
     assert float(hass.states.get("sensor.bbox_downloaded").state) > 0
+
+
+def _entry(hass, config_entry, entity_id):
+    return er.async_get(hass).async_get(entity_id)
+
+
+def _enable(hass, config_entry, *entity_ids):
+    registry = er.async_get(hass)
+    for entity_id in entity_ids:
+        registry.async_update_entity(entity_id, disabled_by=None)
+
+
+# --- a) uptime -> start time -------------------------------------------------
+
+BOOT = datetime(2026, 11, 19, 21, 4, 10, tzinfo=UTC) - timedelta(seconds=7560048)
+
+
+async def test_boot_time_replaces_uptime(
+    hass: HomeAssistant, config_entry: ConfigEntry, router: FakeBox
+) -> None:
+    """The start time = device.now - device.uptime, a TIMESTAMP without state class."""
+    registry = er.async_get(hass)
+    # an entity of the former Uptime sensor is left in the registry
+    registry.async_get_or_create(
+        "sensor", DOMAIN, f"{SERIAL}-info.device.uptime", config_entry=config_entry
+    )
+    await setup_entry(hass, config_entry)
+
+    state = hass.states.get("sensor.bbox_last_boot")
+    assert datetime.fromisoformat(state.state) == BOOT
+    assert state.attributes["device_class"] == SensorDeviceClass.TIMESTAMP
+    assert "state_class" not in state.attributes
+    assert registry.async_get("sensor.bbox_last_boot").unique_id == (
+        f"{SERIAL}-info.device.boot_time"
+    )
+    # the former sensor is removed
+    assert (
+        registry.async_get_entity_id("sensor", DOMAIN, f"{SERIAL}-info.device.uptime")
+        is None
+    )
+    assert hass.states.get("sensor.bbox_uptime") is None
+
+
+async def test_boot_time_is_stable_between_updates(
+    hass: HomeAssistant, config_entry: ConfigEntry, router: FakeBox
+) -> None:
+    """A jitter of a few seconds does not change the state; a reboot does."""
+    await setup_entry(hass, config_entry)
+    first = hass.states.get("sensor.bbox_last_boot")
+    coordinator = config_entry.runtime_data
+
+    async def refresh(now: str, uptime: int):
+        device = copy.deepcopy(DEVICE_WITH_SERIAL)
+        device[0]["device"]["now"] = now
+        device[0]["device"]["uptime"] = uptime
+        router.route("device", device)
+        await coordinator.async_refresh()
+        await hass.async_block_till_done()
+        return hass.states.get("sensor.bbox_last_boot")
+
+    # normal cycle 60 s later, then rounding jitter of +/- 2 s
+    for now, uptime in (
+        ("2026-11-19T22:05:10+0100", 7560108),
+        ("2026-11-19T22:06:10+0100", 7560167),
+        ("2026-11-19T22:07:10+0100", 7560230),
+    ):
+        state = await refresh(now, uptime)
+        assert state.state == first.state
+        assert state.last_updated == first.last_updated
+
+    # reboot: the start time moves
+    state = await refresh("2026-11-19T22:10:10+0100", 120)
+    assert datetime.fromisoformat(state.state) == datetime(
+        2026, 11, 19, 21, 8, 10, tzinfo=UTC
+    )
+
+
+async def test_boot_time_unknown_without_data(
+    hass: HomeAssistant, config_entry: ConfigEntry, router: FakeBox
+) -> None:
+    """No `now`, or no uptime, or a naive date: unknown state."""
+    for patch in ({"now": None}, {"uptime": None}, {"now": "2026-11-19T22:04:10"}):
+        device = copy.deepcopy(DEVICE_WITH_SERIAL)
+        device[0]["device"].update(patch)
+        router.route("device", device)
+        await hass.config_entries.async_reload(config_entry.entry_id) if (
+            config_entry.state == ConfigEntryState.LOADED
+        ) else await setup_entry(hass, config_entry)
+        await hass.async_block_till_done()
+        assert hass.states.get("sensor.bbox_last_boot").state == STATE_UNKNOWN
+
+
+# --- b) occupation -----------------------------------------------------------
+
+
+async def test_occupation_percent_and_raw(
+    hass: HomeAssistant, config_entry: ConfigEntry, router: FakeBox
+) -> None:
+    """Percentage of the contractual bandwidth, and the raw field (disabled)."""
+    registry = er.async_get(hass)
+    await setup_entry(hass, config_entry)
+
+    # fixture: rx 25525 / 8000000 kb/s, tx 2560 / 1000000 kb/s
+    rx = hass.states.get("sensor.bbox_download_bandwidth_occupation")
+    tx = hass.states.get("sensor.bbox_upload_bandwidth_occupation")
+    assert float(rx.state) == pytest.approx(0.32, abs=0.005)
+    assert float(tx.state) == pytest.approx(0.26, abs=0.005)
+    assert rx.attributes["unit_of_measurement"] == "%"
+    assert "device_class" not in rx.attributes
+    assert (
+        registry.async_get("sensor.bbox_download_bandwidth_occupation").unique_id
+        == f"{SERIAL}-wan_ip_stats.wan.ip.stats.rx.occupation"
+    )
+
+    # raw fields: disabled by default, no unit
+    for direction, _expected in (("download", "25"), ("upload", "2")):
+        entity_id = f"sensor.bbox_{direction}_occupation_raw"
+        assert hass.states.get(entity_id) is None
+        entity = registry.async_get(entity_id)
+        assert entity.disabled_by is not None
+        assert entity.unit_of_measurement is None
+        registry.async_update_entity(entity_id, disabled_by=None)
+    assert registry.async_get("sensor.bbox_download_occupation_raw").unique_id == (
+        f"{SERIAL}-wan_ip_stats.wan.ip.stats.rx.occupation_raw"
+    )
+    await hass.config_entries.async_reload(config_entry.entry_id)
+    await hass.async_block_till_done()
+    assert hass.states.get("sensor.bbox_download_occupation_raw").state == "25"
+    assert hass.states.get("sensor.bbox_upload_occupation_raw").state == "2"
+
+
+@pytest.mark.parametrize(
+    ("patch", "expected"),
+    [
+        ({"contractualBandwidth": 0}, STATE_UNKNOWN),
+        ({"contractualBandwidth": None}, STATE_UNKNOWN),
+        ({"contractualBandwidth": "n/a"}, STATE_UNKNOWN),
+        ("missing", STATE_UNKNOWN),
+        ({"bandwidth": 99999999}, "100.0"),
+        ({"bandwidth": -5}, "0.0"),
+        ({"bandwidth": None}, STATE_UNKNOWN),
+    ],
+)
+async def test_occupation_percent_is_bounded_and_defensive(
+    hass: HomeAssistant, config_entry: ConfigEntry, router: FakeBox, patch, expected
+) -> None:
+    """Unknown without a usable contractual bandwidth, clamped to 0-100."""
+    # derived variant (anonymous) of the real answer
+    stats = copy.deepcopy(PUBLIC_ANSWERS["wan/ip/stats"])
+    rx = stats[0]["wan"]["ip"]["stats"]["rx"]
+    if patch == "missing":
+        del rx["contractualBandwidth"]
+    else:
+        rx.update(patch)
+    router.route("wan/ip/stats", stats)
+    await setup_entry(hass, config_entry)
+    assert (
+        hass.states.get("sensor.bbox_download_bandwidth_occupation").state == expected
+    )
+
+
+# --- c) no POWER_FACTOR ------------------------------------------------------
+
+
+async def test_percentage_sensors_have_no_device_class(
+    hass: HomeAssistant, config_entry: ConfigEntry, router: FakeBox
+) -> None:
+    """Memory free is a plain percentage; POWER_FACTOR is not used anymore."""
+    await setup_entry(hass, config_entry)
+    state = hass.states.get("sensor.bbox_memory_free")
+    assert state.attributes["unit_of_measurement"] == "%"
+    assert "device_class" not in state.attributes
+    assert state.attributes["state_class"] == SensorStateClass.MEASUREMENT
+
+    root = Path(__file__).parent.parent / "custom_components"
+    for source in root.rglob("*.py"):
+        assert "POWER_FACTOR" not in source.read_text(), source
+
+
+# --- e) error / discard counters --------------------------------------------
+
+
+@pytest.mark.parametrize("direction", ["download", "upload"])
+@pytest.mark.parametrize("kind", ["discard", "error"])
+async def test_packet_counters(
+    hass: HomeAssistant,
+    config_entry: ConfigEntry,
+    router: FakeBox,
+    direction: str,
+    kind: str,
+) -> None:
+    """Error and discard counters: TOTAL_INCREASING, disabled by default."""
+    await setup_entry(hass, config_entry)
+    entity_id = f"sensor.bbox_{direction}_{kind}_packet"
+    entity = er.async_get(hass).async_get(entity_id)
+    assert entity.disabled_by is not None
+    assert hass.states.get(entity_id) is None
+    er.async_get(hass).async_update_entity(entity_id, disabled_by=None)
+    await hass.config_entries.async_reload(config_entry.entry_id)
+    await hass.async_block_till_done()
+    state = hass.states.get(entity_id)
+    assert state.state == "0"
+    assert state.attributes["state_class"] == SensorStateClass.TOTAL_INCREASING

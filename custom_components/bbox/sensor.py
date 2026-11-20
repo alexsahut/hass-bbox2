@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from collections.abc import Callable
 from dataclasses import dataclass
+from datetime import datetime, timedelta
 from typing import Any
 
 from homeassistant.components.sensor import DOMAIN as SENSOR_DOMAIN
@@ -18,13 +19,13 @@ from homeassistant.const import (
     UnitOfDataRate,
     UnitOfInformation,
     UnitOfTemperature,
-    UnitOfTime,
 )
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers.entity import EntityDescription
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.typing import StateType
+from homeassistant.util import dt as dt_util
 
 from . import BBoxConfigEntry
 from .const import DOMAIN
@@ -42,6 +43,17 @@ class BboxSensorDescription(SensorEntityDescription):
     data_sources: tuple[str, ...] | None = None
     # The sensor is only created when a password is configured
     requires_auth: bool = False
+    # Path of the value in the data when it differs from the key (the key, which
+    # builds the unique_id, never changes for an entity which is kept)
+    source: str | None = None
+    # The value is a start time, kept stable between two updates
+    boot_time: bool = False
+    # Entities removed from the registry: unique keys of replaced sensors
+    replaces: tuple[str, ...] = ()
+
+
+# A new boot time is only taken into account when it moves by more than this
+BOOT_TIME_TOLERANCE = timedelta(seconds=10)
 
 
 def _to_float(value: Any) -> float | None:
@@ -63,6 +75,30 @@ def _get_temperature(data: dict[str, Any]) -> float | None:
     ) is not None:
         return round(temperature / 1000, 1)
     return None
+
+
+def _occupation_percent(data: dict[str, Any], direction: str) -> float | None:
+    """Return the rate as a percentage of the contractual bandwidth (0-100).
+
+    None when the contractual bandwidth is missing or 0, or the rate is unknown.
+    """
+    prefix = f"wan_ip_stats.wan.ip.stats.{direction}"
+    bandwidth = _to_float(finditem(data, f"{prefix}.bandwidth"))
+    contractual = _to_float(finditem(data, f"{prefix}.contractualBandwidth"))
+    if bandwidth is None or not contractual or contractual <= 0:
+        return None
+    return round(min(max(bandwidth * 100 / contractual, 0.0), 100.0), 2)
+
+
+def _get_boot_time(data: dict[str, Any]) -> datetime | None:
+    """Return the start time of the Bbox: `device.now` minus `device.uptime`."""
+    now = finditem(data, "info.device.now")
+    uptime = _to_float(finditem(data, "info.device.uptime"))
+    if not isinstance(now, str) or uptime is None or uptime < 0:
+        return None
+    if (parsed := dt_util.parse_datetime(now)) is None or parsed.tzinfo is None:
+        return None
+    return (parsed - timedelta(seconds=uptime)).replace(microsecond=0)
 
 
 SENSOR_TYPES: tuple[BboxSensorDescription, ...] = (
@@ -90,11 +126,15 @@ SENSOR_TYPES: tuple[BboxSensorDescription, ...] = (
         key="wan_ip_stats.wan.ip.stats.rx.packetsdiscards",
         name="Download discard packet",
         icon="mdi:upload-network",
+        state_class=SensorStateClass.TOTAL_INCREASING,
+        entity_registry_enabled_default=False,
     ),
     BboxSensorDescription(
         key="wan_ip_stats.wan.ip.stats.rx.packetserrors",
         name="Download error packet",
         icon="mdi:upload-network",
+        state_class=SensorStateClass.TOTAL_INCREASING,
+        entity_registry_enabled_default=False,
     ),
     BboxSensorDescription(
         key="wan_ip_stats.wan.ip.stats.rx.bandwidth",
@@ -108,23 +148,19 @@ SENSOR_TYPES: tuple[BboxSensorDescription, ...] = (
     BboxSensorDescription(
         key="wan_ip_stats.wan.ip.stats.rx.occupation",
         name="Download bandwidth occupation",
-        device_class=SensorDeviceClass.POWER_FACTOR,
-        icon="mdi:upload-network",
-        get_value=lambda self: (
-            float(
-                finditem(
-                    self.coordinator.data, "wan_ip_stats.wan.ip.stats.rx.bandwidth"
-                )
-            )
-            * 100
-            / float(
-                finditem(
-                    self.coordinator.data, "wan_ip_stats.wan.ip.stats.rx.maxBandwidth"
-                )
-            )
-        ),
+        icon="mdi:gauge",
+        get_value=lambda self: _occupation_percent(self.coordinator.data, "rx"),
         native_unit_of_measurement=PERCENTAGE,
         state_class=SensorStateClass.MEASUREMENT,
+    ),
+    BboxSensorDescription(
+        key="wan_ip_stats.wan.ip.stats.rx.occupation_raw",
+        name="Download occupation (raw)",
+        icon="mdi:gauge",
+        # Raw field of the box, its unit is not documented (see maintenance.md)
+        source="wan_ip_stats.wan.ip.stats.rx.occupation",
+        state_class=SensorStateClass.MEASUREMENT,
+        entity_registry_enabled_default=False,
     ),
     BboxSensorDescription(
         key="wan_ip_stats.wan.ip.stats.tx.bytes",
@@ -139,11 +175,15 @@ SENSOR_TYPES: tuple[BboxSensorDescription, ...] = (
         key="wan_ip_stats.wan.ip.stats.tx.packetsdiscards",
         name="Upload discard packet",
         icon="mdi:upload-network",
+        state_class=SensorStateClass.TOTAL_INCREASING,
+        entity_registry_enabled_default=False,
     ),
     BboxSensorDescription(
         key="wan_ip_stats.wan.ip.stats.tx.packetserrors",
         name="Upload error packet",
         icon="mdi:upload-network",
+        state_class=SensorStateClass.TOTAL_INCREASING,
+        entity_registry_enabled_default=False,
     ),
     BboxSensorDescription(
         key="wan_ip_stats.wan.ip.stats.tx.bandwidth",
@@ -157,23 +197,19 @@ SENSOR_TYPES: tuple[BboxSensorDescription, ...] = (
     BboxSensorDescription(
         key="wan_ip_stats.wan.ip.stats.tx.occupation",
         name="Upload bandwidth occupation",
-        device_class=SensorDeviceClass.POWER_FACTOR,
-        icon="mdi:upload-network",
-        get_value=lambda self: (
-            float(
-                finditem(
-                    self.coordinator.data, "wan_ip_stats.wan.ip.stats.tx.bandwidth"
-                )
-            )
-            * 100
-            / float(
-                finditem(
-                    self.coordinator.data, "wan_ip_stats.wan.ip.stats.tx.maxBandwidth"
-                )
-            )
-        ),
+        icon="mdi:gauge",
+        get_value=lambda self: _occupation_percent(self.coordinator.data, "tx"),
         native_unit_of_measurement=PERCENTAGE,
         state_class=SensorStateClass.MEASUREMENT,
+    ),
+    BboxSensorDescription(
+        key="wan_ip_stats.wan.ip.stats.tx.occupation_raw",
+        name="Upload occupation (raw)",
+        icon="mdi:gauge",
+        # Raw field of the box, its unit is not documented (see maintenance.md)
+        source="wan_ip_stats.wan.ip.stats.tx.occupation",
+        state_class=SensorStateClass.MEASUREMENT,
+        entity_registry_enabled_default=False,
     ),
     BboxSensorDescription(
         key="wan_ip.wan.ip.address",
@@ -191,16 +227,18 @@ SENSOR_TYPES: tuple[BboxSensorDescription, ...] = (
         icon="mdi:counter",
     ),
     BboxSensorDescription(
-        key="info.device.uptime",
-        name="Uptime",
+        key="info.device.boot_time",
+        name="Last boot",
         icon="mdi:clock",
-        state_class=SensorDeviceClass.DURATION,
-        native_unit_of_measurement=UnitOfTime.SECONDS,
+        device_class=SensorDeviceClass.TIMESTAMP,
+        data_sources=("info",),
+        boot_time=True,
+        # Replaces the "Uptime" sensor (key "info.device.uptime")
+        replaces=("info.device.uptime",),
     ),
     BboxSensorDescription(
         key="memory.device.mem.free",
         name="Memory free",
-        device_class=SensorDeviceClass.POWER_FACTOR,
         icon="mdi:gauge",
         get_value=lambda self: (
             int(finditem(self.coordinator.data, "memory.device.mem.free") * 100)
@@ -231,7 +269,8 @@ async def async_setup_entry(
     registry = er.async_get(hass)
     entities = []
     for description in SENSOR_TYPES:
-        sensor = BboxSensor(coordinator, description)
+        sensor_class = BboxBootTimeSensor if description.boot_time else BboxSensor
+        sensor = sensor_class(coordinator, description)
         if description.requires_auth and not coordinator.has_password:
             # Without password the sensor would stay unavailable: no entity
             if entity_id := registry.async_get_entity_id(
@@ -239,6 +278,12 @@ async def async_setup_entry(
             ):
                 registry.async_remove(entity_id)
             continue
+        for legacy_key in description.replaces:
+            # The replaced sensor would stay "unavailable" forever
+            if entity_id := registry.async_get_entity_id(
+                SENSOR_DOMAIN, DOMAIN, f"{sensor.box_id}-{legacy_key}"
+            ):
+                registry.async_remove(entity_id)
         entities.append(sensor)
     async_add_entities(entities)
 
@@ -257,7 +302,10 @@ class BboxSensor(BboxEntity, SensorEntity):
             raw_value = (
                 self.entity_description.get_value(self)
                 if self.entity_description.get_value is not None
-                else finditem(self.coordinator.data, self.entity_description.key)
+                else finditem(
+                    self.coordinator.data,
+                    self.entity_description.source or self.entity_description.key,
+                )
             )
             return (
                 self.entity_description.value_fn(raw_value)
@@ -267,3 +315,27 @@ class BboxSensor(BboxEntity, SensorEntity):
         except (TypeError, ValueError, ZeroDivisionError):
             # Value missing or not supported by this Bbox model
             return None
+
+
+class BboxBootTimeSensor(BboxSensor):
+    """Start time of the Bbox, stable from one update to the next.
+
+    `device.now` and `device.uptime` are read at slightly different instants and
+    rounded to the second: the computed time jitters by a second or two. The value
+    only changes when it moves by more than BOOT_TIME_TOLERANCE (a real reboot).
+    """
+
+    _boot_time: datetime | None = None
+
+    @property
+    def native_value(self) -> datetime | None:
+        """Return the start time."""
+        computed = _get_boot_time(self.coordinator.data)
+        if computed is None:
+            return self._boot_time
+        if (
+            self._boot_time is None
+            or abs(computed - self._boot_time) > BOOT_TIME_TOLERANCE
+        ):
+            self._boot_time = computed
+        return self._boot_time

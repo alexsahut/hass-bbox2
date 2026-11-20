@@ -76,4 +76,4 @@ On the contrary, the Bbox immediately reports devices newly connected, so they s
 
 ## Sensor
 
-This platform offers you sensors to monitor a Bbox router. The monitored conditions are instant upload and download rates in Mb/s.
+This platform offers you sensors to monitor a Bbox router. The monitored conditions are instant upload and download rates in kb/s. The detail of the sensors (classes, units, enabled by default) is in `docs/maintenance/maintenance.md`, section 7.

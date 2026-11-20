@@ -70,6 +70,38 @@ Endpoints lus à chaque cycle :
 
 **Identifiant de la box** : avec mot de passe, `unique_id` de l'entrée = numéro de série (`device/summary`) ; sans mot de passe, adresse MAC LAN (`lan/ip`, public). Les `unique_id` des entités ne changent pas dans cette story (`{numéro de série}-{clé}`, ou `ABC12345-{clé}` si `device` ne donne pas le numéro de série, ce qui est le cas sans mot de passe) : leur refonte est l'objet de S5.
 
-## 6. Surcharge de l'intégration native de HA core
+## 7. Capteurs (S3)
+
+| Entité | Source | Classe | Unité | `state_class` | Activée par défaut | `unique_id` (après le n° de série) |
+|---|---|---|---|---|---|---|
+| System Temperature | `device` / `device/cpu` | temperature | °C | measurement | oui | `info.device.temperature.current` |
+| Downloaded / Uploaded | `wan/ip/stats` | data_size | kB | total_increasing | oui | `wan_ip_stats.wan.ip.stats.{rx,tx}.bytes` |
+| Download / Upload speed | `wan/ip/stats` | data_rate | kb/s | measurement | oui | `…{rx,tx}.bandwidth` |
+| Download / Upload bandwidth occupation | `wan/ip/stats` | aucune | % | measurement | oui | `…{rx,tx}.occupation` (conservé) |
+| Download / Upload occupation (raw) | `wan/ip/stats` | aucune | aucune | measurement | **non** | `…{rx,tx}.occupation_raw` (nouveau) |
+| Download / Upload discard packet, error packet | `wan/ip/stats` | aucune | aucune | total_increasing | **non** | `…{rx,tx}.{packetsdiscards,packetserrors}` |
+| IP Address, IPv6 Address | `wan/ip` | aucune | aucune | aucun | oui | `wan_ip.wan.ip.address`, `…ip6address.0.ipaddress` |
+| Boot counter | `device` | aucune | aucune | aucun | oui | `info.device.numberofboots` |
+| Last boot | `device` | timestamp | — | aucun | oui | `info.device.boot_time` (remplace `info.device.uptime`) |
+| Memory free | `device/mem` | aucune | % | measurement | oui | `memory.device.mem.free` |
+| Speedtest download | `speedtest/info` (mot de passe) | data_rate | kb/s | measurement | **non** | `speedtest_infos.…download.0.speed` |
+| Link status (binary) | `wan/ip` | connectivity | — | — | oui | `info.device.status` (conservé) |
+| Ethernet port N (binary) | `device/led` | aucune | — | — | **non** | `led.ethernetPort.{position}.state` |
+
+**Dernier démarrage** : `device.now` − `device.uptime`, tronqué à la seconde. `now` et `uptime` sont lus au même instant par la box mais arrondis séparément : la valeur oscille d'une ou deux secondes. Le capteur garde donc la valeur précédente tant que le nouvel horodatage en diffère de moins de 10 s, ce qui évite d'écrire un état à chaque cycle ; un vrai redémarrage (écart ≫ 10 s) met la valeur à jour. L'ancien capteur « Uptime » (`info.device.uptime`) est supprimé du registre au démarrage (son historique n'est pas migré).
+
+**Link status** : `ON` si `wan.link.state` de `wan/ip` vaut `Up` (état du lien physique/optique). `wan.internet.state` n'est pas utilisé : c'est un entier dont la signification n'est pas documentée (valeur `2` sur une box connectée). Le `device.status` (état de la box) n'est plus utilisé. Le `unique_id` est conservé.
+
+**Ports Ethernet** : un binary_sensor par entrée de `ethernetPort` (`device/led`), nommé d'après son `id` réel (« Ethernet port 3 »). La clé d'unicité reste `led.ethernetPort.{position}.state`, identique à l'ancienne pour les ports existants (la 5696b renvoie les `id` 1 à 5 dans l'ordre) ; l'état est cherché par `id`. Les ports apparaissent dès que `device/led` répond, même après le démarrage. Un port disparu de la réponse passe à l'état inconnu.
+
+### Occupation de la bande passante : incertitudes
+
+Fixture `wan_ip_stats.json` (rx / tx) : `occupation` = 25 / 2, `bandwidth` = 25525 / 2560, `maxBandwidth` = 1 000 000, `contractualBandwidth` = 8 000 000 / 1 000 000.
+
+- **Unité de `bandwidth`** : supposée en kb/s (comme avant ; 25 525 kb/s ≈ 25,5 Mb/s). Cohérent avec `maxBandwidth` = 1 000 000 kb/s = 1 Gb/s (plafond du port) et `contractualBandwidth` = 8 000 000 / 1 000 000 kb/s (8 Gb/s descendant, 1 Gb/s montant), qui correspond à une offre FTTH multi-gigabit. Non vérifié avec l'interface web de la box.
+- **Unité de `occupation`** : indéterminée. 25 est compatible avec deux lectures : ‰ de `maxBandwidth` (25525 / 1 000 000 = 25,5 ‰ → 25) ou Mb/s (25,5 Mb/s → 25) ; de même pour la voie montante (2,56 → 2). Ce n'est **pas** un pourcentage de `maxBandwidth` (2,55 %). La valeur est tronquée à l'entier. Le champ brut est exposé tel quel, sans unité, dans un capteur désactivé par défaut.
+- **Capteur en %** : `bandwidth × 100 / contractualBandwidth`, borné à 0–100, arrondi à 0,01 ; inconnu si `contractualBandwidth` est absent, nul ou non numérique. Il remplace l'ancien calcul sur `maxBandwidth`, qui plafonne à 1 Gb/s alors que l'offre descendante est plus rapide. Il reste dépendant de l'hypothèse sur l'unité de `bandwidth`.
+
+## 8. Surcharge de l'intégration native de HA core
 
 Cette intégration personnalisée, de domaine `bbox`, **surcharge** l'intégration native `bbox` de Home Assistant core (voir §4). Au démarrage, HA journalise l'avertissement attendu « We found a custom integration bbox which has not been tested by Home Assistant » / « custom integration overrides core integration » : ce n'est pas une erreur.
