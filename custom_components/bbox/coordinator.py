@@ -54,6 +54,11 @@ PUBLIC_ENDPOINTS: tuple[Endpoint, ...] = (
     Endpoint("wan_ip_stats", "wan/ip/stats"),
     Endpoint("summary", "summary"),
     Endpoint("wps", "wireless/wps"),
+    Endpoint("upnp_igd", "upnp/igd"),
+    Endpoint("wan_ftth_stats", "wan/ftth/stats"),
+    Endpoint("wan_diags", "wan/diags"),
+    Endpoint("lan_stats", "lan/stats"),
+    Endpoint("alerts", "alerts"),
 )
 
 # Endpoints which require a password: read only when one is configured.

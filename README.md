@@ -76,4 +76,4 @@ On the contrary, the Bbox immediately reports devices newly connected, so they s
 
 ## Sensor
 
-This platform offers you sensors to monitor a Bbox router. The monitored conditions are instant upload and download rates in kb/s. The detail of the sensors (classes, units, enabled by default) is in `docs/maintenance/maintenance.md`, section 7.
+This platform offers you sensors to monitor a Bbox router. The monitored conditions are instant upload and download rates in kb/s. The public sensors (Wi-Fi, WPS, UPnP, FTTH/IPv6 link, contractual rates, alerts, latencies, LAN traffic...) work without a password. The detail of the sensors (source, classes, units, enabled by default, public or authenticated) is in `docs/maintenance/maintenance.md`, section 7.

@@ -56,6 +56,11 @@ async def test_setup_entry_without_password(
         "wan/ip/stats",
         "summary",
         "wireless/wps",
+        "upnp/igd",
+        "wan/ftth/stats",
+        "wan/diags",
+        "lan/stats",
+        "alerts",
     }
     assert not hass.states.async_entity_ids("device_tracker")
     assert hass.states.get("sensor.bbox_ip_address").state == "203.0.113.46"

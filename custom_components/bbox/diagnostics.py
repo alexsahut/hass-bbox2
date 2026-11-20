@@ -14,9 +14,7 @@ from .const import TO_REDACT
 # Extra endpoints read (GET) for the diagnostics only.
 PUBLIC_DIAGNOSTIC_ENDPOINTS = (
     "hosts/me",
-    "lan/stats",
     "services",
-    "wan/ftth/stats",
     "voip/voicemail",
 )
 AUTHENTICATED_DIAGNOSTIC_ENDPOINTS = (

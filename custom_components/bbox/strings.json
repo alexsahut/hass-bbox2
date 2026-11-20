@@ -10,7 +10,8 @@
         "data_description": {
           "host": "Use mabbox.bytel.fr (not the IP address of the Bbox).",
           "password": "Leave empty to read only the public data. With the password, the connected devices, the Wi-Fi state and the Speedtest are also read."
-        }
+        },
+        "description": "Leave the password empty to use only the public data of the Bbox (Internet link, Wi-Fi switches, UPnP/WPS, latencies, LAN traffic...). The password additionally unlocks the connected devices (device trackers), the detailed Wi-Fi state and the Speedtest."
       },
       "reauth_confirm": {
         "title": "Bbox authentication",
@@ -40,7 +41,76 @@
         "data": {
           "refresh_rate": "Refresh rate (in seconds)",
           "track_devices": "Track connected devices (device tracker)"
+        },
+        "data_description": {
+          "track_devices": "Needs the Bbox password: without it no device is tracked."
         }
+      }
+    }
+  },
+  "entity": {
+    "binary_sensor": {
+      "wifi_enabled": {
+        "name": "Wi-Fi enabled"
+      },
+      "guest_wifi_enabled": {
+        "name": "Guest Wi-Fi enabled"
+      },
+      "guest_wifi_24_enabled": {
+        "name": "Guest Wi-Fi 2.4 GHz enabled"
+      },
+      "guest_wifi_5_enabled": {
+        "name": "Guest Wi-Fi 5 GHz enabled"
+      },
+      "compatibility_ssid_24_enabled": {
+        "name": "Compatibility SSID 2.4 GHz enabled"
+      },
+      "compatibility_ssid_5_enabled": {
+        "name": "Compatibility SSID 5 GHz enabled"
+      },
+      "wps_enabled": {
+        "name": "WPS enabled"
+      },
+      "upnp_igd_enabled": {
+        "name": "UPnP IGD enabled"
+      },
+      "ftth_link": {
+        "name": "FTTH link"
+      },
+      "ipv6_ready": {
+        "name": "IPv6 operational"
+      }
+    },
+    "sensor": {
+      "link_type": {
+        "name": "Link type"
+      },
+      "contractual_download": {
+        "name": "Contractual download rate"
+      },
+      "contractual_upload": {
+        "name": "Contractual upload rate"
+      },
+      "alerts": {
+        "name": "Alerts"
+      },
+      "known_devices": {
+        "name": "Known devices"
+      },
+      "latency_ping": {
+        "name": "Ping latency"
+      },
+      "latency_dns": {
+        "name": "DNS latency"
+      },
+      "latency_http": {
+        "name": "HTTP latency"
+      },
+      "lan_received": {
+        "name": "LAN received"
+      },
+      "lan_sent": {
+        "name": "LAN sent"
       }
     }
   }

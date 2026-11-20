@@ -25,6 +25,11 @@ PUBLIC_ANSWERS = {
     "summary": load_f5696b("summary"),
     "wireless/wps": load_f5696b("wireless_wps"),
     "lan/ip": load_f5696b("lan_ip"),
+    "upnp/igd": load_f5696b("upnp_igd"),
+    "wan/ftth/stats": load_f5696b("wan_ftth_stats"),
+    "wan/diags": load_f5696b("wan_diags"),
+    "lan/stats": load_f5696b("lan_stats"),
+    "alerts": load_f5696b("alerts"),
 }
 
 SERIAL = "012345678901234"
