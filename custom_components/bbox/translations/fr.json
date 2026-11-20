@@ -21,6 +21,22 @@
         "data": {
           "password": "Mot de passe (facultatif)"
         }
+      },
+      "reconfigure": {
+        "title": "Reconfigurer la Bbox",
+        "description": "Modifiez la connexion à la Bbox. Le champ mot de passe est vide : laissez-le vide pour conserver le mot de passe actuel, ou saisissez-en un nouveau. La Bbox doit rester la même (même adresse MAC LAN).",
+        "data": {
+          "host": "URL",
+          "password": "Nouveau mot de passe (facultatif)",
+          "remove_password": "Retirer le mot de passe (données publiques seulement)",
+          "use_tls": "Utiliser TLS",
+          "verify_ssl": "Vérification du certificat"
+        },
+        "data_description": {
+          "host": "Utilisez mabbox.bytel.fr (et non l'adresse IP de la Bbox).",
+          "password": "Vide : le mot de passe actuel est conservé. Sans mot de passe, seules les données publiques sont lues.",
+          "remove_password": "Les appareils connectés (device trackers), l'état détaillé du Wi-Fi et le Speedtest ne sont alors plus lus."
+        }
       }
     },
     "error": {
@@ -29,12 +45,14 @@
       "no_identifier": "Impossible de récupérer l'adresse MAC LAN de la Bbox via son API",
       "redirect": "La Bbox a redirigé la requête (habituel avec son adresse IP). Utilisez plutôt le nom d'hôte mabbox.bytel.fr.",
       "dns_error": "Le nom d'hôte n'est pas résolu. Vérifiez le DNS de Home Assistant (mabbox.bytel.fr doit pointer vers la Bbox).",
-      "invalid_response": "La réponse n'est pas une réponse valide de l'API Bbox."
+      "invalid_response": "La réponse n'est pas une réponse valide de l'API Bbox.",
+      "password_and_remove": "Saisissez un nouveau mot de passe ou retirez-le, pas les deux."
     },
     "abort": {
       "already_configured": "Votre équipement est déjà configuré.",
       "reauth_successful": "La ré-authentification a réussi.",
-      "wrong_account": "Ce n'est pas la Bbox de cette configuration."
+      "wrong_account": "Ce n'est pas la Bbox de cette configuration.",
+      "reconfigure_successful": "La configuration a été mise à jour."
     }
   },
   "options": {
