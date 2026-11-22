@@ -255,9 +255,7 @@ async def test_entity_names_are_french(
 
     names = {
         state.attributes["friendly_name"]
-        for entity in er.async_entries_for_config_entry(
-            registry, config_entry.entry_id
-        )
+        for entity in er.async_entries_for_config_entry(registry, config_entry.entry_id)
         if (state := hass.states.get(entity.entity_id))
     }
     assert {
