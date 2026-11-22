@@ -78,10 +78,25 @@ identifier of the box (its LAN MAC address) does not depend on the password: the
 ### Options
 
 - **Refresh rate** (seconds, default 60).
-- **Track connected devices** (device trackers, default off, needs the password). It creates one
-  device tracker and one Home Assistant device per host known by the box (about the value of the
-  "Appareils connus" sensor, often dozens); turning it off later leaves these devices orphaned.
-  Enable it only for presence detection through the box.
+- **Devices to track** (`tracked_devices`, needs the password and a loaded entry). A multi-choice
+  dropdown (with a search field) listing the hosts known by the box, online ones first, each with
+  its name, its state (online / offline) and its link (Wi-Fi with the band, or Ethernet). The labels
+  are in French when the language of Home Assistant is French, in English otherwise. **Nothing is
+  tracked by default.** Only the chosen devices get a device tracker (enabled) and a Home Assistant
+  device. Without the password, or while the entry is not loaded, the list is not offered and only
+  the refresh rate can be changed. Saving the options reloads the integration and applies the
+  choice at once: the trackers and devices of the devices which are not chosen are removed
+  (the Bbox device and every other entity are untouched).
+
+  **Name of a device**: the box often gives no host name. The name is the first available among
+  `userfriendlyname`, `hostname`, "manufacturer model" (from `informations`), then the device type;
+  the MAC address is only a last resort. Devices with the same name get the last 4 hexadecimal
+  characters of their MAC address, e.g. "Acme Phone X (A1B2)". A name you set yourself in Home
+  Assistant is never overwritten.
+
+  **From 2.0.1**: the former "Track connected devices" option is replaced; at the first start of
+  2.0.2 the trackers and devices created by it are removed and none is recreated: choose your devices
+  in the options.
 
 ### Supported routers
 
@@ -128,12 +143,12 @@ Entities marked _disabled_ are created disabled by default.
 
 | Entity | Type | Notes |
 |---|---|---|
-| Connected devices | device_tracker | one per host, option "Track connected devices" |
+| Connected devices | device_tracker | one per device chosen in the option "Devices to track" |
 | Speedtest download | sensor | kb/s, _disabled_ |
 
 ## Presence detection
 
-Device trackers need the password and the option **Track connected devices**.
+Device trackers need the password and the devices chosen in the option **Devices to track**.
 
 The Bbox waits for some time before marking a device as inactive: there is a small delay (1 or
 2 minutes) between the time you disconnect a device and the time it appears as "away" in Home

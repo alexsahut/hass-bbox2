@@ -58,13 +58,19 @@
   "options": {
     "step": {
       "init": {
-        "description": "Merci de reconfigurer la connexion à votre  Bbox.",
+        "description": "Choisissez les appareils à suivre avec un device tracker.",
         "data": {
           "refresh_rate": "Fréquence de rafraîchissement (en secondes)",
-          "track_devices": "Suivre les appareils connectés (device tracker)"
+          "tracked_devices": "Appareils à suivre"
         },
         "data_description": {
-          "track_devices": "Désactivé par défaut. Nécessite le mot de passe de la Bbox. Crée un device tracker et un appareil par hôte connu de la box (environ la valeur du capteur « Appareils connus », souvent des dizaines) ; désactiver ensuite l'option retire les trackers mais laisse ces appareils orphelins."
+          "tracked_devices": "Aucun par défaut. Seuls les appareils choisis ont un device tracker et un appareil Home Assistant, nommés d'après les informations de la Bbox (nom, fabricant et modèle, type). Les appareils non choisis sont retirés du registre à l'enregistrement des options. Les appareils en ligne sont en tête."
+        }
+      },
+      "init_no_devices": {
+        "description": "Les appareils à suivre ne peuvent être choisis que si le mot de passe de la Bbox est renseigné, l'intégration chargée et la liste des appareils lue. Seule la fréquence de rafraîchissement est modifiable pour l'instant.",
+        "data": {
+          "refresh_rate": "Fréquence de rafraîchissement (en secondes)"
         }
       }
     }

@@ -62,3 +62,6 @@ MOCK_USER_INPUT = {
     "verify_ssl": True,
 }
 MOCK_PUBLIC_INPUT = {**MOCK_USER_INPUT, "password": ""}
+
+# Synthetic hosts (not a capture): MAC 02:00:00:00:00:xx, see f5696b/README.md
+SYNTHETIC_HOSTS = load_f5696b("hosts_synthetic")

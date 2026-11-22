@@ -6,13 +6,13 @@ MANUFACTURER = "Bouygues"
 DEFAULT_TITLE = f"{MANUFACTURER} {BBOX_NAME}"
 CONF_USE_TLS = "use_tls"
 CONF_REFRESH_RATE = "refresh_rate"
+CONF_TRACKED_DEVICES = "tracked_devices"
+# Option of the 2.0.0 and 2.0.1 versions, migrated to CONF_TRACKED_DEVICES
 CONF_TRACK_DEVICES = "track_devices"
 DEFAULT_HOST = "mabbox.bytel.fr"
 DEFAULT_USE_TLS = True
 DEFAULT_VERIFY_SSL = True
 DEFAULT_REFRESH_RATE = 60
-# Off: one device_tracker and one device per host known by the box
-DEFAULT_TRACK_DEVICES = False
 
 TO_REDACT = {
     "account",

@@ -14,6 +14,10 @@ from homeassistant.const import CONF_HOST, CONF_PASSWORD, CONF_VERIFY_SSL
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from homeassistant.helpers.selector import (
+    SelectOptionDict,
+    SelectSelector,
+    SelectSelectorConfig,
+    SelectSelectorMode,
     TextSelector,
     TextSelectorConfig,
     TextSelectorType,
@@ -31,17 +35,17 @@ from .api import (
 )
 from .const import (
     CONF_REFRESH_RATE,
-    CONF_TRACK_DEVICES,
+    CONF_TRACKED_DEVICES,
     CONF_USE_TLS,
     DEFAULT_HOST,
     DEFAULT_REFRESH_RATE,
     DEFAULT_TITLE,
-    DEFAULT_TRACK_DEVICES,
     DEFAULT_USE_TLS,
     DEFAULT_VERIFY_SSL,
     DOMAIN,
 )
 from .helpers import box_identifier
+from .hosts import device_options, hosts_of, tracked_macs
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -140,6 +144,8 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     """Handle a config flow for Bouygues Bbox."""
 
     VERSION = 1
+    # 2: `track_devices` replaced by `tracked_devices` (see async_migrate_entry)
+    MINOR_VERSION = 2
 
     @staticmethod
     @callback
@@ -268,26 +274,77 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 class OptionsFlow(config_entries.OptionsFlow):
     """Handle a options flow for Bouygues Bbox."""
 
+    def _devices_selector(self) -> SelectSelector | None:
+        """Return the selector of the devices to track, None if it is not possible.
+
+        It needs a loaded entry with a password (the hosts are then read). The
+        options are the hosts known by the coordinator; a MAC address already
+        chosen but no longer listed stays proposed.
+        """
+        entry = self.config_entry
+        coordinator = getattr(entry, "runtime_data", None)
+        if (
+            entry.state is not config_entries.ConfigEntryState.LOADED
+            or coordinator is None
+            or not coordinator.has_password
+        ):
+            return None
+        options = device_options(
+            hosts_of(coordinator.data),
+            tracked_macs(entry.options),
+            self.hass.config.language,
+        )
+        if not options:
+            return None
+        # A dropdown: with about 90 hosts a list of checkboxes is a very long page,
+        # the dropdown has a search field and shows the choices as chips.
+        return SelectSelector(
+            SelectSelectorConfig(
+                options=[SelectOptionDict(value=m, label=lbl) for m, lbl in options],
+                multiple=True,
+                mode=SelectSelectorMode.DROPDOWN,
+                sort=False,
+            )
+        )
+
     async def async_step_init(
         self, user_input: Mapping[str, Any] | None = None
     ) -> ConfigFlowResult:
-        """Manage the options."""
-        if user_input:
-            return self.async_create_entry(data=user_input)
+        """Manage the options: the refresh rate and the devices to track."""
+        selector = self._devices_selector()
+        return await self._async_handle(
+            "init" if selector else "init_no_devices", selector, user_input
+        )
 
+    async def async_step_init_no_devices(
+        self, user_input: Mapping[str, Any] | None = None
+    ) -> ConfigFlowResult:
+        """Manage the refresh rate (no device can be chosen)."""
+        return await self._async_handle("init_no_devices", None, user_input)
+
+    async def _async_handle(
+        self,
+        step_id: str,
+        selector: SelectSelector | None,
+        user_input: Mapping[str, Any] | None,
+    ) -> ConfigFlowResult:
+        if user_input is not None:
+            # The options which are not in the form (the chosen devices when the
+            # selector is not shown) are kept
+            data = {**self.config_entry.options, **user_input}
+            if CONF_TRACKED_DEVICES in user_input:
+                data[CONF_TRACKED_DEVICES] = tracked_macs(user_input)
+            return self.async_create_entry(data=data)
+
+        schema: dict[Any, Any] = {
+            vol.Optional(CONF_REFRESH_RATE, default=DEFAULT_REFRESH_RATE): int
+        }
+        if selector:
+            schema[vol.Optional(CONF_TRACKED_DEVICES, default=[])] = selector
         return self.async_show_form(
-            step_id="init",
+            step_id=step_id,
             data_schema=self.add_suggested_values_to_schema(
-                vol.Schema(
-                    {
-                        vol.Optional(
-                            CONF_REFRESH_RATE, default=DEFAULT_REFRESH_RATE
-                        ): int,
-                        vol.Optional(
-                            CONF_TRACK_DEVICES, default=DEFAULT_TRACK_DEVICES
-                        ): bool,
-                    }
-                ),
+                vol.Schema(schema),
                 self.config_entry.options,
             ),
         )

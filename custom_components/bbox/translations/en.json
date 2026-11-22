@@ -58,13 +58,19 @@
   "options": {
     "step": {
       "init": {
-        "description": "Please reconfigure the connection with your Bbox.",
+        "description": "Choose the devices to track with a device tracker.",
         "data": {
           "refresh_rate": "Refresh rate (in seconds)",
-          "track_devices": "Track connected devices (device tracker)"
+          "tracked_devices": "Devices to track"
         },
         "data_description": {
-          "track_devices": "Off by default. Needs the Bbox password. Creates one device tracker and one device per host known by the box (about the value of the \"Known devices\" sensor, often dozens); turning the option off later removes the trackers but leaves those devices orphaned."
+          "tracked_devices": "None by default. Only the chosen devices get a device tracker and a Home Assistant device, named after the Bbox information (name, manufacturer and model, type). The devices which are not chosen are removed from the registry when the options are saved. Online devices come first."
+        }
+      },
+      "init_no_devices": {
+        "description": "The devices to track can be chosen only when the Bbox password is set, the integration is loaded and the Bbox has listed its devices. Only the refresh rate can be changed now.",
+        "data": {
+          "refresh_rate": "Refresh rate (in seconds)"
         }
       }
     }

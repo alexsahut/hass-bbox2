@@ -362,23 +362,6 @@ async def test_reauth_redirect(hass: HomeAssistant, router: FakeBox) -> None:
     assert result["errors"] == {"base": "redirect"}
 
 
-async def test_options_flow(hass: HomeAssistant, router: FakeBox) -> None:
-    """The options (refresh rate, device tracking) are unchanged."""
-    entry = MockConfigEntry(domain=DOMAIN, unique_id=BOX_ID, data=MOCK_USER_INPUT)
-    entry.add_to_hass(hass)
-
-    result = await hass.config_entries.options.async_init(entry.entry_id)
-    assert result["type"] == FlowResultType.FORM
-    defaults = {str(key): key.default() for key in result["data_schema"].schema}
-    # device tracking is off by default (one device per host of the box)
-    assert defaults == {"refresh_rate": 60, "track_devices": False}
-    result = await hass.config_entries.options.async_configure(
-        result["flow_id"], {"refresh_rate": 120, "track_devices": False}
-    )
-    assert result["type"] == FlowResultType.CREATE_ENTRY
-    assert entry.options == {"refresh_rate": 120, "track_devices": False}
-
-
 # --- reconfiguration ---------------------------------------------------------
 
 
