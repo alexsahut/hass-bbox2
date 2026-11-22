@@ -146,6 +146,7 @@ SENSOR_TYPES: tuple[BboxSensorDescription, ...] = (
         key="info.device.temperature.current",
         translation_key="system_temperature",
         native_unit_of_measurement=UnitOfTemperature.CELSIUS,
+        suggested_display_precision=1,
         device_class=SensorDeviceClass.TEMPERATURE,
         icon="mdi:thermometer",
         # Some models (ex: F@st5688b) only report the temperature (in m°C) in the cpu data
@@ -191,6 +192,7 @@ SENSOR_TYPES: tuple[BboxSensorDescription, ...] = (
         icon="mdi:gauge",
         get_value=lambda self: _occupation_percent(self.coordinator.data, "rx"),
         native_unit_of_measurement=PERCENTAGE,
+        suggested_display_precision=1,
         state_class=SensorStateClass.MEASUREMENT,
     ),
     BboxSensorDescription(
@@ -240,6 +242,7 @@ SENSOR_TYPES: tuple[BboxSensorDescription, ...] = (
         icon="mdi:gauge",
         get_value=lambda self: _occupation_percent(self.coordinator.data, "tx"),
         native_unit_of_measurement=PERCENTAGE,
+        suggested_display_precision=1,
         state_class=SensorStateClass.MEASUREMENT,
     ),
     BboxSensorDescription(
@@ -285,6 +288,7 @@ SENSOR_TYPES: tuple[BboxSensorDescription, ...] = (
             / int(finditem(self.coordinator.data, "memory.device.mem.total"))
         ),
         native_unit_of_measurement=PERCENTAGE,
+        suggested_display_precision=1,
         state_class=SensorStateClass.MEASUREMENT,
     ),
     BboxSensorDescription(
@@ -341,6 +345,7 @@ SENSOR_TYPES: tuple[BboxSensorDescription, ...] = (
         icon="mdi:timer-outline",
         device_class=SensorDeviceClass.DURATION,
         native_unit_of_measurement=UnitOfTime.MILLISECONDS,
+        suggested_display_precision=1,
         state_class=SensorStateClass.MEASUREMENT,
         get_value=lambda self: _last_latency(self.coordinator.data, "ping"),
     ),
@@ -350,6 +355,7 @@ SENSOR_TYPES: tuple[BboxSensorDescription, ...] = (
         icon="mdi:timer-outline",
         device_class=SensorDeviceClass.DURATION,
         native_unit_of_measurement=UnitOfTime.MILLISECONDS,
+        suggested_display_precision=1,
         state_class=SensorStateClass.MEASUREMENT,
         entity_registry_enabled_default=False,
         get_value=lambda self: _last_latency(self.coordinator.data, "dns"),
@@ -360,6 +366,7 @@ SENSOR_TYPES: tuple[BboxSensorDescription, ...] = (
         icon="mdi:timer-outline",
         device_class=SensorDeviceClass.DURATION,
         native_unit_of_measurement=UnitOfTime.MILLISECONDS,
+        suggested_display_precision=1,
         state_class=SensorStateClass.MEASUREMENT,
         entity_registry_enabled_default=False,
         get_value=lambda self: _last_latency(self.coordinator.data, "http"),
