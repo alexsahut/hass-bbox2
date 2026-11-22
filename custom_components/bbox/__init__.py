@@ -94,9 +94,8 @@ def _async_cleanup_hosts(
     - the trackers (entity registry) of this entry whose MAC address is not
       chosen are removed (the unique_id of a tracker is its MAC address);
     - the devices of this entry are kept if they are the Bbox, or a chosen host;
-      the others are removed. A device belongs to a single config entry: the
-      device of another integration with the same MAC address is another
-      device, never touched (`async_entries_for_config_entry` does not list it).
+      this entry is removed from the others (`_async_release_device`): a device
+      shared with another integration survives.
 
     No other entity is touched: the sensors, binary sensors and the button
     belong to the Bbox device.
@@ -128,7 +127,29 @@ def _async_cleanup_hosts(
             for kind, value in device.connections
         ):
             continue
+        _async_release_device(devices, device, entry.entry_id)
+
+
+@callback
+def _async_release_device(
+    devices: dr.DeviceRegistry, device: dr.DeviceEntry, entry_id: str
+) -> None:
+    """Remove this config entry from a device, never the device of another one.
+
+    Up to HA 2026.9 (`DeviceEntry.config_entries`), HA merges the devices which
+    declare the same MAC address connection (Shelly, ESPHome, Sonos...) into one
+    device shared by several config entries, listed by
+    `async_entries_for_config_entry`: only this entry is detached, HA deletes
+    the device once it has no config entry left. Since HA 2026.10
+    (`DeviceEntry.config_entry_id`), a device belongs to a single config entry
+    (`remove_config_entry_id` is deprecated): the device listed for this entry
+    is ours alone and is removed, the one of the other integration is another
+    device.
+    """
+    if hasattr(device, "config_entry_id"):
         devices.async_remove_device(device.id)
+    else:
+        devices.async_update_device(device.id, remove_config_entry_id=entry_id)
 
 
 async def async_migrate_entry(hass: HomeAssistant, entry: BBoxConfigEntry) -> bool:

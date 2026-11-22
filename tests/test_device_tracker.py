@@ -1,6 +1,8 @@
 """Tests of the device trackers (they need the hosts, so a password)."""
 
+from types import SimpleNamespace
 from typing import Any
+from unittest.mock import MagicMock
 
 import pytest
 from homeassistant.config_entries import ConfigEntry, ConfigEntryState
@@ -10,6 +12,7 @@ from homeassistant.helpers import device_registry as dr
 from homeassistant.helpers import entity_registry as er
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 
+from custom_components.bbox import _async_release_device
 from custom_components.bbox.const import DOMAIN
 
 from .common import setup_entry
@@ -274,6 +277,69 @@ async def test_device_of_another_integration_is_left_alone(
     }
     assert dr.async_get(hass).async_get(known.id).name == "Other name"
     assert hass.states.get("device_tracker.host_001").state == STATE_HOME
+
+
+async def test_unchosen_host_shared_with_another_integration(
+    hass: HomeAssistant, config_entry: ConfigEntry, router: FakeBox
+) -> None:
+    """A host not chosen, whose MAC address another integration also declares:
+    the device of the other integration survives, with only its config entry."""
+    hass.config_entries.async_update_entry(
+        config_entry, options={"tracked_devices": [MAC_1]}
+    )
+    other = MockConfigEntry(domain="other")
+    other.add_to_hass(hass)
+    devs = dr.async_get(hass)
+    mac = "02:00:00:00:01:05"
+    ours = devs.async_get_or_create(
+        config_entry_id=config_entry.entry_id,
+        identifiers={(DOMAIN, f"{BOX_ID}_{mac.replace(':', '_')}")},
+        connections={(dr.CONNECTION_NETWORK_MAC, mac)},
+        name=mac,
+    )
+    theirs = devs.async_get_or_create(
+        config_entry_id=other.entry_id,
+        connections={(dr.CONNECTION_NETWORK_MAC, mac)},
+        name="Shared",
+    )
+
+    await setup_entry(hass, config_entry)
+
+    kept = devs.async_get(theirs.id)
+    assert kept is not None
+    assert kept.name == "Shared"
+    assert dr.async_entries_for_config_entry(devs, other.entry_id) == [kept]
+    assert all(
+        (dr.CONNECTION_NETWORK_MAC, mac) not in d.connections
+        for d in devices(hass, config_entry)
+    )
+    if ours.id != theirs.id:
+        # HA 2026.10+: one device per config entry, ours is removed
+        assert devs.async_get(ours.id) is None
+
+
+def test_release_device_shared_by_several_config_entries() -> None:
+    """HA up to 2026.9: a device has several config entries, ours is detached."""
+    devs = MagicMock()
+    device = SimpleNamespace(id="dev", config_entries={"123456", "other_entry"})
+
+    _async_release_device(devs, device, "123456")
+
+    devs.async_update_device.assert_called_once_with(
+        "dev", remove_config_entry_id="123456"
+    )
+    devs.async_remove_device.assert_not_called()
+
+
+def test_release_device_of_a_single_config_entry() -> None:
+    """HA 2026.10+: a device has a single config entry, ours is removed."""
+    devs = MagicMock()
+    device = SimpleNamespace(id="dev", config_entry_id="123456")
+
+    _async_release_device(devs, device, "123456")
+
+    devs.async_remove_device.assert_called_once_with("dev")
+    devs.async_update_device.assert_not_called()
 
 
 async def test_nothing_without_password(
