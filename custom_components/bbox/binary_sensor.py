@@ -65,7 +65,7 @@ def _ipv6_ready(data: dict[str, Any]) -> bool | None:
 LINK_STATUS = BboxBinarySensorDescription(
     # The key is kept for the unique_id; the value is the state of the WAN link
     key="info.device.status",
-    name="Link status",
+    translation_key="link_status",
     device_class=BinarySensorDeviceClass.CONNECTIVITY,
     source="wan_ip.wan.link.state",
     data_sources=("wan_ip",),
@@ -150,7 +150,8 @@ def _port_description(index: int, port_id: Any) -> BboxBinarySensorDescription:
     """
     return BboxBinarySensorDescription(
         key=f"led.ethernetPort.{index}.state",
-        name=f"Ethernet port {port_id}",
+        translation_key="ethernet_port",
+        translation_placeholders={"port_id": str(port_id)},
         entity_registry_enabled_default=False,
         port_id=port_id,
         value_fn=_is_up,

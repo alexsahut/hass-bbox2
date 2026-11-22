@@ -7,21 +7,17 @@ from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from . import BBoxConfigEntry
 from .entity import BboxEntity
 
+REFRESH_BUTTON = ButtonEntityDescription(
+    key="refresh", translation_key="refresh", icon="mdi:refresh-circle"
+)
+
 
 async def async_setup_entry(
     hass: HomeAssistant, entry: BBoxConfigEntry, async_add_entities: AddEntitiesCallback
 ) -> None:
     """Set up sensor."""
     coordinator = entry.runtime_data
-    entities = [
-        RefreshButton(
-            coordinator,
-            ButtonEntityDescription(
-                key="refresh", name="Refresh", icon="mdi:refresh-circle"
-            ),
-        ),
-    ]
-    async_add_entities(entities)
+    async_add_entities([RefreshButton(coordinator, REFRESH_BUTTON)])
 
 
 class RefreshButton(BboxEntity, ButtonEntity):

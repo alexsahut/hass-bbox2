@@ -64,13 +64,19 @@
           "track_devices": "Track connected devices (device tracker)"
         },
         "data_description": {
-          "track_devices": "Needs the Bbox password: without it no device is tracked."
+          "track_devices": "Off by default. Needs the Bbox password. Creates one device tracker and one device per host known by the box (about the value of the \"Known devices\" sensor, often dozens); turning the option off later removes the trackers but leaves those devices orphaned."
         }
       }
     }
   },
   "entity": {
     "binary_sensor": {
+      "link_status": {
+        "name": "Link status"
+      },
+      "ethernet_port": {
+        "name": "Ethernet port {port_id}"
+      },
       "wifi_enabled": {
         "name": "Wi-Fi enabled"
       },
@@ -103,6 +109,63 @@
       }
     },
     "sensor": {
+      "system_temperature": {
+        "name": "System temperature"
+      },
+      "downloaded": {
+        "name": "Downloaded"
+      },
+      "download_discarded_packets": {
+        "name": "Download discard packet"
+      },
+      "download_error_packets": {
+        "name": "Download error packet"
+      },
+      "download_speed": {
+        "name": "Download speed"
+      },
+      "download_occupation": {
+        "name": "Download bandwidth occupation"
+      },
+      "download_occupation_raw": {
+        "name": "Download occupation (raw)"
+      },
+      "uploaded": {
+        "name": "Uploaded"
+      },
+      "upload_discarded_packets": {
+        "name": "Upload discard packet"
+      },
+      "upload_error_packets": {
+        "name": "Upload error packet"
+      },
+      "upload_speed": {
+        "name": "Upload speed"
+      },
+      "upload_occupation": {
+        "name": "Upload bandwidth occupation"
+      },
+      "upload_occupation_raw": {
+        "name": "Upload occupation (raw)"
+      },
+      "ip_address": {
+        "name": "IP address"
+      },
+      "ipv6_address": {
+        "name": "IPv6 address"
+      },
+      "boot_counter": {
+        "name": "Boot counter"
+      },
+      "last_boot": {
+        "name": "Last boot"
+      },
+      "memory_free": {
+        "name": "Memory free"
+      },
+      "speedtest_download": {
+        "name": "Speedtest download"
+      },
       "link_type": {
         "name": "Link type"
       },
@@ -132,6 +195,11 @@
       },
       "lan_sent": {
         "name": "LAN sent"
+      }
+    },
+    "button": {
+      "refresh": {
+        "name": "Refresh"
       }
     }
   }

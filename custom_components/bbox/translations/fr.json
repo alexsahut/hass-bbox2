@@ -64,13 +64,19 @@
           "track_devices": "Suivre les appareils connectés (device tracker)"
         },
         "data_description": {
-          "track_devices": "Nécessite le mot de passe de la Bbox : sans lui, aucun appareil n'est suivi."
+          "track_devices": "Désactivé par défaut. Nécessite le mot de passe de la Bbox. Crée un device tracker et un appareil par hôte connu de la box (environ la valeur du capteur « Appareils connus », souvent des dizaines) ; désactiver ensuite l'option retire les trackers mais laisse ces appareils orphelins."
         }
       }
     }
   },
   "entity": {
     "binary_sensor": {
+      "link_status": {
+        "name": "Lien WAN"
+      },
+      "ethernet_port": {
+        "name": "Port Ethernet {port_id}"
+      },
       "wifi_enabled": {
         "name": "Wi-Fi activé"
       },
@@ -103,6 +109,63 @@
       }
     },
     "sensor": {
+      "system_temperature": {
+        "name": "Température système"
+      },
+      "downloaded": {
+        "name": "Données reçues"
+      },
+      "download_discarded_packets": {
+        "name": "Paquets rejetés en réception"
+      },
+      "download_error_packets": {
+        "name": "Paquets en erreur en réception"
+      },
+      "download_speed": {
+        "name": "Débit descendant"
+      },
+      "download_occupation": {
+        "name": "Occupation du débit descendant"
+      },
+      "download_occupation_raw": {
+        "name": "Occupation descendante (brute)"
+      },
+      "uploaded": {
+        "name": "Données envoyées"
+      },
+      "upload_discarded_packets": {
+        "name": "Paquets rejetés en émission"
+      },
+      "upload_error_packets": {
+        "name": "Paquets en erreur en émission"
+      },
+      "upload_speed": {
+        "name": "Débit montant"
+      },
+      "upload_occupation": {
+        "name": "Occupation du débit montant"
+      },
+      "upload_occupation_raw": {
+        "name": "Occupation montante (brute)"
+      },
+      "ip_address": {
+        "name": "Adresse IP"
+      },
+      "ipv6_address": {
+        "name": "Adresse IPv6"
+      },
+      "boot_counter": {
+        "name": "Nombre de démarrages"
+      },
+      "last_boot": {
+        "name": "Dernier démarrage"
+      },
+      "memory_free": {
+        "name": "Mémoire libre"
+      },
+      "speedtest_download": {
+        "name": "Speedtest descendant"
+      },
       "link_type": {
         "name": "Type de lien"
       },
@@ -132,6 +195,11 @@
       },
       "lan_sent": {
         "name": "Trafic LAN émis"
+      }
+    },
+    "button": {
+      "refresh": {
+        "name": "Rafraîchir"
       }
     }
   }

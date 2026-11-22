@@ -4,6 +4,7 @@ The variants of an answer (empty series, Down state...) are derived from the
 fixtures in the tests: they contain no personal data.
 """
 
+import ast
 import copy
 import json
 import logging
@@ -25,8 +26,14 @@ from homeassistant.const import (
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers import device_registry as dr
 from homeassistant.helpers import entity_registry as er
+from homeassistant.helpers.typing import UNDEFINED
 
-from custom_components.bbox.binary_sensor import BINARY_SENSOR_TYPES
+from custom_components.bbox.binary_sensor import (
+    BINARY_SENSOR_TYPES,
+    LINK_STATUS,
+    _port_description,
+)
+from custom_components.bbox.button import REFRESH_BUTTON
 from custom_components.bbox.const import DOMAIN
 from custom_components.bbox.coordinator import AUTHENTICATED_ENDPOINTS
 from custom_components.bbox.sensor import SENSOR_TYPES
@@ -194,25 +201,87 @@ async def test_sensor_classes_and_defaults(
     assert set(state.attributes) <= {"state_class", "icon", "friendly_name"}
 
 
-async def test_translations_cover_every_new_entity() -> None:
-    """strings.json, en.json and fr.json name every new entity."""
+def _entity_descriptions() -> dict[str, list]:
+    """Every entity description of the integration, per platform."""
+    return {
+        "sensor": list(SENSOR_TYPES),
+        "binary_sensor": [LINK_STATUS, *BINARY_SENSOR_TYPES, _port_description(0, 1)],
+        "button": [REFRESH_BUTTON],
+    }
+
+
+async def test_no_hard_coded_entity_name() -> None:
+    """No `name=` in an entity description: every name comes from a translation_key."""
+    for path in COMPONENT.glob("*.py"):
+        for node in ast.walk(ast.parse(path.read_text())):
+            if (
+                isinstance(node, ast.Call)
+                and ast.unparse(node.func).endswith("Description")
+                and any(keyword.arg == "name" for keyword in node.keywords)
+            ):
+                pytest.fail(f"{path.name}:{node.lineno}: hard-coded name")
+    for descriptions in _entity_descriptions().values():
+        for description in descriptions:
+            assert description.name is UNDEFINED, description.key
+            assert description.translation_key, description.key
+
+
+async def test_translations_cover_every_entity() -> None:
+    """strings.json, en.json and fr.json name every entity, and only them."""
     for name in ("strings.json", "translations/en.json", "translations/fr.json"):
         entity = json.loads((COMPONENT / name).read_text())["entity"]
-        for domain, descriptions in (
-            ("sensor", [d for d in SENSOR_TYPES if d.translation_key]),
-            ("binary_sensor", list(BINARY_SENSOR_TYPES)),
-        ):
+        assert set(entity) == set(_entity_descriptions()), name
+        for domain, descriptions in _entity_descriptions().items():
             assert {d.translation_key for d in descriptions} == set(entity[domain]), (
                 name,
                 domain,
             )
             assert all(entity[domain][k]["name"] for k in entity[domain])
+        assert "{port_id}" in entity["binary_sensor"]["ethernet_port"]["name"], name
+
+
+async def test_entity_names_are_french(
+    hass: HomeAssistant, config_entry: ConfigEntry, router: FakeBox
+) -> None:
+    """With Home Assistant in French, every name is French (ports included)."""
+    hass.config.language = "fr"
+    await setup_entry(hass, config_entry)
+    registry = er.async_get(hass)
+    for entity in er.async_entries_for_config_entry(registry, config_entry.entry_id):
+        if entity.disabled_by is not None:
+            registry.async_update_entity(entity.entity_id, disabled_by=None)
+    await hass.config_entries.async_reload(config_entry.entry_id)
+    await hass.async_block_till_done()
+
+    names = {
+        state.attributes["friendly_name"]
+        for entity in er.async_entries_for_config_entry(registry, config_entry.entry_id)
+        if (state := hass.states.get(entity.entity_id))
+    }
+    assert {
+        "Bbox Lien WAN",
+        "Bbox Port Ethernet 1",
+        "Bbox Température système",
+        "Bbox Données reçues",
+        "Bbox Adresse IP",
+        "Bbox Dernier démarrage",
+        "Bbox Rafraîchir",
+        "Bbox Speedtest descendant",
+    } <= names
+    english = json.loads((COMPONENT / "translations/en.json").read_text())["entity"]
+    french = json.loads((COMPONENT / "translations/fr.json").read_text())["entity"]
+    for domain, keys in english.items():
+        for key, value in keys.items():
+            assert value["name"] != french[domain][key]["name"], key
 
 
 async def test_unique_ids_of_existing_entities_are_frozen(
     hass: HomeAssistant, config_entry: ConfigEntry, router: FakeBox
 ) -> None:
     """Every entity keeps its key; the prefix is the LAN MAC address of the box."""
+    hass.config_entries.async_update_entry(
+        config_entry, options={"track_devices": True}
+    )
     await setup_entry(hass, config_entry)
     for domain, keys in EXISTING_KEYS.items():
         registered = set(_registry_ids(hass, config_entry, domain))

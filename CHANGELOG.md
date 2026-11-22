@@ -83,6 +83,15 @@ l'identifiant de la box (donc les `unique_id`) change. Voir « Incompatibilités
 - sensor : Type de lien, Débit contractuel descendant / montant, Alertes,
   Appareils connus, Latence ping / DNS / HTTP, Trafic LAN reçu / émis.
 
+### Noms des entités et appareils suivis
+
+- Noms des entités traduits (`translation_key`) : en français pour une instance
+  HA en français, en anglais sinon. Plus aucun nom en dur.
+- Option **Suivre les appareils connectés** désactivée par défaut : elle crée un
+  device tracker et un appareil HA par hôte connu de la box (≈ capteur
+  « Appareils connus »). L'activer seulement pour la présence via la box ; la
+  couper ensuite laisse ces appareils orphelins.
+
 ### Incompatibilités avec l'amont (1.5.4)
 
 - **Pas de migration depuis l'intégration amont.** Les `unique_id` amont
