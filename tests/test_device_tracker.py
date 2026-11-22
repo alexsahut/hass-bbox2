@@ -5,6 +5,7 @@ from typing import Any
 from unittest.mock import MagicMock
 
 import pytest
+from homeassistant.components.device_tracker import ScannerEntity
 from homeassistant.config_entries import ConfigEntry, ConfigEntryState
 from homeassistant.const import STATE_HOME, STATE_NOT_HOME, STATE_UNAVAILABLE
 from homeassistant.core import HomeAssistant
@@ -78,6 +79,96 @@ async def test_trackers_of_the_chosen_hosts(
     entity = er.async_get(hass).async_get("device_tracker.host_001")
     assert entity.unique_id == MAC_1
     assert entity.device_id == device.id
+
+
+@pytest.fixture(name="scanner_2026_11")
+def scanner_like_2026_11(monkeypatch: pytest.MonkeyPatch) -> None:
+    """`ScannerEntity` as in Home Assistant 2026.11: disabled by default, and its
+    `device_info` is the one of the entity (here, the Bbox of `BboxEntity`)."""
+    monkeypatch.setattr(
+        ScannerEntity, "entity_registry_enabled_default", property(lambda self: False)
+    )
+    monkeypatch.setattr(
+        ScannerEntity, "device_info", property(lambda self: self._attr_device_info)
+    )
+
+
+@pytest.mark.usefixtures("scanner_2026_11")
+async def test_trackers_enabled_and_linked_at_first_setup(
+    hass: HomeAssistant, config_entry: ConfigEntry, router: FakeBox
+) -> None:
+    """Empty registry: each chosen host has an enabled tracker, linked to the
+    device of the host (not the Bbox), named after this device."""
+    await setup_entry(hass, config_entry)
+
+    assert len(trackers(hass, config_entry)) == 3
+    assert all(e.disabled_by is None for e in trackers(hass, config_entry))
+    hosts = {d.name: d for d in host_devices(hass, config_entry)}
+    entity = er.async_get(hass).async_get("device_tracker.host_001")
+    assert entity.unique_id == MAC_1
+    assert entity.device_id == hosts["Host-001"].id
+    state = hass.states.get("device_tracker.host_001")
+    assert state.state == STATE_HOME
+    assert state.attributes["friendly_name"] == "Host-001"
+
+
+@pytest.mark.usefixtures("scanner_2026_11")
+async def test_tracker_of_2_0_2_moved_to_the_device_of_the_host(
+    hass: HomeAssistant, config_entry: ConfigEntry, router: FakeBox
+) -> None:
+    """A tracker of 2.0.2 on Home Assistant 2026.11 (linked to the Bbox, disabled
+    by the integration, renamed by the user): same unique_id and entity_id,
+    enabled, linked to the device of the host, named after it."""
+    entities = er.async_get(hass)
+    devs = dr.async_get(hass)
+    box = devs.async_get_or_create(
+        config_entry_id=config_entry.entry_id, identifiers={(DOMAIN, BOX_ID)}
+    )
+    old = entities.async_get_or_create(
+        "device_tracker",
+        DOMAIN,
+        MAC_1,
+        config_entry=config_entry,
+        device_id=box.id,
+        disabled_by=er.RegistryEntryDisabler.INTEGRATION,
+    )
+    entities.async_update_entity(
+        old.entity_id, new_entity_id="device_tracker.iphone_alex"
+    )
+
+    await setup_entry(hass, config_entry)
+
+    entity = entities.async_get("device_tracker.iphone_alex")
+    assert entity.id == old.id
+    assert entity.unique_id == MAC_1
+    assert entity.disabled_by is None
+    host = devs.async_get_device_by_identifier(
+        (DOMAIN, f"{BOX_ID}_00_01_02_03_04_0e"), config_entry.entry_id
+    )
+    assert entity.device_id == host.id != box.id
+    assert hass.states.get("device_tracker.host_001") is None
+    state = hass.states.get("device_tracker.iphone_alex")
+    assert state.attributes["friendly_name"] == "Host-001"
+
+
+@pytest.mark.usefixtures("scanner_2026_11")
+async def test_tracker_named_after_its_device(
+    hass: HomeAssistant, config_entry: ConfigEntry, router: FakeBox
+) -> None:
+    """The name given to the device by the user names its tracker, without
+    changing its entity_id."""
+    await setup_entry(hass, config_entry)
+    devs = dr.async_get(hass)
+    device = devs.async_get_device_by_identifier(
+        (DOMAIN, f"{BOX_ID}_00_01_02_03_04_0e"), config_entry.entry_id
+    )
+    devs.async_update_device(device.id, name_by_user="Iphone Alex")
+    assert await hass.config_entries.async_reload(config_entry.entry_id)
+    await hass.async_block_till_done()
+
+    state = hass.states.get("device_tracker.host_001")
+    assert state.attributes["friendly_name"] == "Iphone Alex"
+    assert er.async_get(hass).async_get(state.entity_id).device_id == device.id
 
 
 @pytest.mark.parametrize("options", [{}, {"tracked_devices": []}])
