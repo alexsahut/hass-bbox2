@@ -180,5 +180,32 @@ async def async_unload_entry(hass: HomeAssistant, entry: BBoxConfigEntry) -> boo
 async def async_remove_config_entry_device(
     hass: HomeAssistant, entry: BBoxConfigEntry, device_entry: dr.DeviceEntry
 ) -> bool:
-    """Remove config entry from a device."""
+    """Remove the device of a host, never the one of the Bbox.
+
+    The MAC address of the host is removed from the chosen hosts
+    (`tracked_devices`), the other options are kept: the host is not created
+    again at the next load. A host is known by its MAC address connection, or
+    by its identifier `{box_id}_{mac}` (`host_device_key`).
+    """
+    box_id = str(entry.unique_id)
+    if (DOMAIN, box_id) in device_entry.identifiers:
+        return False
+
+    removed = {
+        mac_key(value)
+        for kind, value in device_entry.connections
+        if kind == dr.CONNECTION_NETWORK_MAC
+    }
+    chosen = tracked_macs(entry.options)
+    for mac in chosen:
+        if any(
+            (domain, key.lower()) == (DOMAIN, host_device_key(box_id, mac).lower())
+            for domain, key in device_entry.identifiers
+        ):
+            removed.add(mac_key(mac))
+    kept = [mac for mac in chosen if mac_key(mac) not in removed]
+    if kept != chosen:
+        hass.config_entries.async_update_entry(
+            entry, options={**entry.options, CONF_TRACKED_DEVICES: kept}
+        )
     return True

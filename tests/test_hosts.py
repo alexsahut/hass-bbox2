@@ -5,6 +5,7 @@ import pytest
 from custom_components.bbox.hosts import (
     clean,
     device_options,
+    fix_text,
     host_label,
     host_name,
     host_names,
@@ -97,6 +98,26 @@ def test_clean_and_hosts_of() -> None:
         "5",
     ]
     assert hosts_of(None) == []
+
+
+@pytest.mark.parametrize(
+    ("text", "expected"),
+    [
+        ("GÃ©nÃ©rique", "Générique"),  # encoded twice by the box
+        ("Générique", "Générique"),  # already correct
+        ("Salon — TV", "Salon — TV"),  # not latin-1
+        ("iPhone", "iPhone"),
+    ],
+)
+def test_fix_text(text: str, expected: str) -> None:
+    assert fix_text(text) == expected
+    assert clean(f" {text} ") == expected
+
+
+def test_host_name_repairs_double_encoding() -> None:
+    host = {"informations": {"manufacturer": "GÃ©nÃ©rique", "model": "TÃ©lÃ©"}}
+    assert host_name(host) == "Générique Télé"
+    assert host_name({"hostname": "CafÃ©"}) == "Café"
     assert hosts_of({"devices": {"hosts": {"list": [{"a": 1}, "x"]}}}) == [{"a": 1}]
     assert hosts_of({"devices": {}}) == []
 

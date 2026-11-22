@@ -5,14 +5,20 @@ from typing import Any
 from unittest.mock import MagicMock
 
 import pytest
+from homeassistant.components.device_tracker import ScannerEntity
 from homeassistant.config_entries import ConfigEntry, ConfigEntryState
 from homeassistant.const import STATE_HOME, STATE_NOT_HOME, STATE_UNAVAILABLE
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers import device_registry as dr
 from homeassistant.helpers import entity_registry as er
+from homeassistant.setup import async_setup_component
 from pytest_homeassistant_custom_component.common import MockConfigEntry
+from pytest_homeassistant_custom_component.typing import WebSocketGenerator
 
-from custom_components.bbox import _async_release_device
+from custom_components.bbox import (
+    _async_release_device,
+    async_remove_config_entry_device,
+)
 from custom_components.bbox.const import DOMAIN
 
 from .common import setup_entry
@@ -78,6 +84,96 @@ async def test_trackers_of_the_chosen_hosts(
     entity = er.async_get(hass).async_get("device_tracker.host_001")
     assert entity.unique_id == MAC_1
     assert entity.device_id == device.id
+
+
+@pytest.fixture(name="scanner_2026_11")
+def scanner_like_2026_11(monkeypatch: pytest.MonkeyPatch) -> None:
+    """`ScannerEntity` as in Home Assistant 2026.11: disabled by default, and its
+    `device_info` is the one of the entity (here, the Bbox of `BboxEntity`)."""
+    monkeypatch.setattr(
+        ScannerEntity, "entity_registry_enabled_default", property(lambda self: False)
+    )
+    monkeypatch.setattr(
+        ScannerEntity, "device_info", property(lambda self: self._attr_device_info)
+    )
+
+
+@pytest.mark.usefixtures("scanner_2026_11")
+async def test_trackers_enabled_and_linked_at_first_setup(
+    hass: HomeAssistant, config_entry: ConfigEntry, router: FakeBox
+) -> None:
+    """Empty registry: each chosen host has an enabled tracker, linked to the
+    device of the host (not the Bbox), named after this device."""
+    await setup_entry(hass, config_entry)
+
+    assert len(trackers(hass, config_entry)) == 3
+    assert all(e.disabled_by is None for e in trackers(hass, config_entry))
+    hosts = {d.name: d for d in host_devices(hass, config_entry)}
+    entity = er.async_get(hass).async_get("device_tracker.host_001")
+    assert entity.unique_id == MAC_1
+    assert entity.device_id == hosts["Host-001"].id
+    state = hass.states.get("device_tracker.host_001")
+    assert state.state == STATE_HOME
+    assert state.attributes["friendly_name"] == "Host-001"
+
+
+@pytest.mark.usefixtures("scanner_2026_11")
+async def test_tracker_of_2_0_2_moved_to_the_device_of_the_host(
+    hass: HomeAssistant, config_entry: ConfigEntry, router: FakeBox
+) -> None:
+    """A tracker of 2.0.2 on Home Assistant 2026.11 (linked to the Bbox, disabled
+    by the integration, renamed by the user): same unique_id and entity_id,
+    enabled, linked to the device of the host, named after it."""
+    entities = er.async_get(hass)
+    devs = dr.async_get(hass)
+    box = devs.async_get_or_create(
+        config_entry_id=config_entry.entry_id, identifiers={(DOMAIN, BOX_ID)}
+    )
+    old = entities.async_get_or_create(
+        "device_tracker",
+        DOMAIN,
+        MAC_1,
+        config_entry=config_entry,
+        device_id=box.id,
+        disabled_by=er.RegistryEntryDisabler.INTEGRATION,
+    )
+    entities.async_update_entity(
+        old.entity_id, new_entity_id="device_tracker.iphone_alex"
+    )
+
+    await setup_entry(hass, config_entry)
+
+    entity = entities.async_get("device_tracker.iphone_alex")
+    assert entity.id == old.id
+    assert entity.unique_id == MAC_1
+    assert entity.disabled_by is None
+    host = devs.async_get_device_by_identifier(
+        (DOMAIN, f"{BOX_ID}_00_01_02_03_04_0e"), config_entry.entry_id
+    )
+    assert entity.device_id == host.id != box.id
+    assert hass.states.get("device_tracker.host_001") is None
+    state = hass.states.get("device_tracker.iphone_alex")
+    assert state.attributes["friendly_name"] == "Host-001"
+
+
+@pytest.mark.usefixtures("scanner_2026_11")
+async def test_tracker_named_after_its_device(
+    hass: HomeAssistant, config_entry: ConfigEntry, router: FakeBox
+) -> None:
+    """The name given to the device by the user names its tracker, without
+    changing its entity_id."""
+    await setup_entry(hass, config_entry)
+    devs = dr.async_get(hass)
+    device = devs.async_get_device_by_identifier(
+        (DOMAIN, f"{BOX_ID}_00_01_02_03_04_0e"), config_entry.entry_id
+    )
+    devs.async_update_device(device.id, name_by_user="Iphone Alex")
+    assert await hass.config_entries.async_reload(config_entry.entry_id)
+    await hass.async_block_till_done()
+
+    state = hass.states.get("device_tracker.host_001")
+    assert state.attributes["friendly_name"] == "Iphone Alex"
+    assert er.async_get(hass).async_get(state.entity_id).device_id == device.id
 
 
 @pytest.mark.parametrize("options", [{}, {"tracked_devices": []}])
@@ -465,3 +561,112 @@ async def test_reconfigure_adds_the_password(
     assert before.items() <= after.items()
     assert len(trackers(hass, public_config_entry)) == 3
     assert hass.states.get("device_tracker.host_001").state == STATE_HOME
+
+
+async def remove_device(
+    hass: HomeAssistant, hass_ws_client: WebSocketGenerator, device_id: str
+) -> dict[str, Any]:
+    """Remove a device as the Devices page of Home Assistant does."""
+    assert await async_setup_component(hass, "config", {})
+    client = await hass_ws_client(hass)
+    await client.send_json_auto_id(
+        {"type": "config/device_registry/remove", "device_id": device_id}
+    )
+    response = await client.receive_json()
+    await hass.async_block_till_done()
+    return response
+
+
+async def test_remove_the_device_of_a_host(
+    hass: HomeAssistant,
+    config_entry: ConfigEntry,
+    router: FakeBox,
+    hass_ws_client: WebSocketGenerator,
+) -> None:
+    """Removing the device of a host removes its MAC address from the chosen
+    hosts, keeps the other options; nothing is created again at the next load."""
+    hass.config_entries.async_update_entry(
+        config_entry,
+        options={"refresh_rate": 120, "tracked_devices": [MAC_1, MAC_4, MAC_6]},
+    )
+    await setup_entry(hass, config_entry)
+    device = dr.async_get(hass).async_get_device_by_identifier(
+        (DOMAIN, f"{BOX_ID}_01_02_03_04_05_f9"), config_entry.entry_id
+    )
+
+    response = await remove_device(hass, hass_ws_client, device.id)
+
+    assert response["success"]
+    assert config_entry.options == {
+        "refresh_rate": 120,
+        "tracked_devices": [MAC_1, MAC_6],
+    }
+    assert config_entry.state == ConfigEntryState.LOADED
+    assert {e.unique_id for e in trackers(hass, config_entry)} == {MAC_1, MAC_6}
+    assert {d.name for d in host_devices(hass, config_entry)} == {
+        "Host-001",
+        "Host-006",
+    }
+    assert hass.states.get("device_tracker.host_004") is None
+
+    assert await hass.config_entries.async_reload(config_entry.entry_id)
+    await hass.async_block_till_done()
+    assert {e.unique_id for e in trackers(hass, config_entry)} == {MAC_1, MAC_6}
+    assert hass.states.get("device_tracker.host_004") is None
+
+
+async def test_the_device_of_the_box_can_not_be_removed(
+    hass: HomeAssistant,
+    config_entry: ConfigEntry,
+    router: FakeBox,
+    hass_ws_client: WebSocketGenerator,
+) -> None:
+    """The Bbox device is refused; the options are not changed."""
+    hass.config_entries.async_update_entry(
+        config_entry,
+        options={"refresh_rate": 120, "tracked_devices": [MAC_1, MAC_4, MAC_6]},
+    )
+    await setup_entry(hass, config_entry)
+    box = dr.async_get(hass).async_get_device_by_identifier(
+        (DOMAIN, BOX_ID), config_entry.entry_id
+    )
+
+    response = await remove_device(hass, hass_ws_client, box.id)
+
+    assert not response["success"]
+    assert dr.async_get(hass).async_get(box.id) is not None
+    assert config_entry.options == {
+        "refresh_rate": 120,
+        "tracked_devices": [MAC_1, MAC_4, MAC_6],
+    }
+    assert len(trackers(hass, config_entry)) == 3
+
+
+async def test_remove_a_host_known_by_its_identifier_or_not_chosen(
+    hass: HomeAssistant, config_entry: ConfigEntry, router: FakeBox
+) -> None:
+    """A host device without MAC connection is found by its identifier (MAC in
+    upper case in the options); a device of no chosen host is removed without
+    changing the options."""
+    hass.config_entries.async_update_entry(
+        config_entry,
+        options={"refresh_rate": 90, "tracked_devices": [MAC_1.upper(), MAC_4]},
+    )
+    devs = dr.async_get(hass)
+    by_key = devs.async_get_or_create(
+        config_entry_id=config_entry.entry_id,
+        identifiers={(DOMAIN, f"{BOX_ID}_00_01_02_03_04_0e")},
+    )
+    other = devs.async_get_or_create(
+        config_entry_id=config_entry.entry_id,
+        connections={(dr.CONNECTION_NETWORK_MAC, "02:00:00:00:99:99")},
+    )
+
+    assert await async_remove_config_entry_device(hass, config_entry, other)
+    assert config_entry.options == {
+        "refresh_rate": 90,
+        "tracked_devices": [MAC_1.upper(), MAC_4],
+    }
+
+    assert await async_remove_config_entry_device(hass, config_entry, by_key)
+    assert config_entry.options == {"refresh_rate": 90, "tracked_devices": [MAC_4]}

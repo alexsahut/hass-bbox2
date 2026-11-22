@@ -15,6 +15,7 @@ from homeassistant.components.sensor import SensorEntityDescription
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers import device_registry as dr
 from homeassistant.helpers import entity_registry as er
+from homeassistant.helpers.device_registry import DeviceInfo
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 from . import BBoxConfigEntry
@@ -47,7 +48,8 @@ async def async_setup_entry(
         mac = clean(host.get("macaddress"))
         if not mac or mac_key(mac) not in chosen:
             continue
-        # A tracker disabled by the integration (2.0.1) is enabled again; a
+        # A tracker disabled by the integration (2.0.1, or 2.0.2 from Home
+        # Assistant 2026.11) is enabled again; a
         # tracker disabled by the user stays disabled
         entity_id = registry.async_get_entity_id(DEVICE_TRACKER_DOMAIN, DOMAIN, mac)
         reg_entry = registry.async_get(entity_id) if entity_id else None
@@ -68,9 +70,8 @@ def _async_register_device(
 ) -> None:
     """Create (or update) the Home Assistant device of a chosen host.
 
-    A device_tracker (`ScannerEntity`) has no `device_info` and Home Assistant
-    only enables it, and links it to a device, when a device with its MAC address
-    exists: so the device is created here, named like the tracker. The
+    The device is created here, named after the host, with the Bbox as parent;
+    the tracker is linked to it by its `device_info`. The
     identifier `(bbox, {box_id}_{mac})` is the one of 2.0.1. The name given by
     the user (`name_by_user`) is never touched. A device belongs to a single
     config entry: the device of another integration with the same MAC address
@@ -95,8 +96,9 @@ def _async_register_device(
 class BboxDeviceTracker(BboxDeviceEntity, ScannerEntity):
     """Representation of a tracked device."""
 
-    # The name of the tracker is the one of its device (no "Name Name")
-    _attr_has_entity_name = False
+    # The name of the tracker is the one of its device, including the name given
+    # by the user (`name_by_user`)
+    _attr_has_entity_name = True
 
     def __init__(
         self,
@@ -107,8 +109,33 @@ class BboxDeviceTracker(BboxDeviceEntity, ScannerEntity):
     ) -> None:
         """Initialize."""
         super().__init__(coordinator, description, device, name)
+        self._attr_name = None
         # Home Assistant names the device of a tracker after its hostname
         self._attr_hostname = name
+        # The device of the host (see `_async_register_device`), not the one of
+        # the Bbox; identifiers and connections only: the name is left alone
+        self._attr_device_info = DeviceInfo(
+            identifiers={(DOMAIN, self._device_key)},
+            connections={(dr.CONNECTION_NETWORK_MAC, self._mac)},
+        )
+
+    @property
+    def device_info(self) -> DeviceInfo | None:
+        """Return the device of the host.
+
+        `ScannerEntity` returns no device info up to Home Assistant 2026.10, and
+        the one of `BboxEntity` (the Bbox) from 2026.11.
+        """
+        return self._attr_device_info
+
+    @property
+    def entity_registry_enabled_default(self) -> bool:
+        """Return True: the host was chosen by the user.
+
+        `ScannerEntity` disables it otherwise at its first setup from Home
+        Assistant 2026.11.
+        """
+        return True
 
     @property
     def source_type(self) -> str:
