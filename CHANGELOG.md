@@ -4,6 +4,18 @@ Ce fork (`alexsahut/hass-bbox2`) part de la version amont **1.5.4** de
 [cyr-ius/hass-bbox2](https://github.com/cyr-ius/hass-bbox2). Les versions suivent
 `MAJOR.MINOR.PATCH` (politique : `docs/maintenance/maintenance.md`, section 3).
 
+## 2.0.1
+
+Correctif d'affichage, sans changement d'entité ni d'identifiant.
+
+- Précision d'affichage (`suggested_display_precision`, 1 décimale) sur les
+  capteurs en % (**Mémoire libre**, **Occupation du débit**
+  descendant / montant), les **latences** ping / DNS / HTTP et la
+  **température**. « Mémoire libre » s'affichait non arrondie
+  (ex. 51.2167817312799 %). La valeur de l'état n'est pas arrondie : seul son
+  affichage l'est, et une précision choisie dans HA par l'utilisateur reste
+  prioritaire.
+
 ## 2.0.0
 
 Première version du fork. Version **majeure** : des entités sont supprimées et

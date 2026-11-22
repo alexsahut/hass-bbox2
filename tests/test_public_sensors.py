@@ -201,6 +201,40 @@ async def test_sensor_classes_and_defaults(
     assert set(state.attributes) <= {"state_class", "icon", "friendly_name"}
 
 
+DISPLAY_PRECISION = {
+    "info.device.temperature.current": 1,
+    "memory.device.mem.free": 1,
+    "wan_ip_stats.wan.ip.stats.rx.occupation": 1,
+    "wan_ip_stats.wan.ip.stats.tx.occupation": 1,
+    "wan_diags.diags.ping": 1,
+    "wan_diags.diags.dns": 1,
+    "wan_diags.diags.http": 1,
+}
+
+
+async def test_display_precision(
+    hass: HomeAssistant, config_entry: ConfigEntry, router: FakeBox
+) -> None:
+    """Percentages, latencies and temperature are displayed rounded (S10).
+
+    "Memory free" was displayed as 51.2167817312799 %.
+    """
+    await setup_entry(hass, config_entry)
+    await _enable_all(hass, config_entry)
+    by_key = {d.key: d for d in SENSOR_TYPES}
+    for d in SENSOR_TYPES:
+        if d.native_unit_of_measurement in ("%", "ms", "°C"):
+            assert d.key in DISPLAY_PRECISION, d.key
+    ids = _registry_ids(hass, config_entry, "sensor")
+    for key, precision in DISPLAY_PRECISION.items():
+        assert by_key[key].suggested_display_precision == precision, key
+        entity = ids[f"{BOX_ID}-{key}"]
+        assert entity.options["sensor"]["suggested_display_precision"] == precision
+    # the state itself is not rounded: only its display is
+    state = _state(hass, config_entry, "sensor", "memory.device.mem.free")
+    assert float(state.state) != round(float(state.state), 1)
+
+
 def _entity_descriptions() -> dict[str, list]:
     """Every entity description of the integration, per platform."""
     return {
