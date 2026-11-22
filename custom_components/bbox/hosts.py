@@ -31,11 +31,24 @@ _TEXTS = {
 }
 
 
+def fix_text(text: str) -> str:
+    """Return the text decoded once more when the box encoded it twice.
+
+    The box returns some texts encoded twice in UTF-8 ("GÃ©nÃ©rique"): when
+    the text, encoded in latin-1, is valid UTF-8, the decoded text is returned
+    ("Générique"); otherwise the text is returned unchanged.
+    """
+    try:
+        return text.encode("latin-1").decode("utf-8")
+    except UnicodeError:
+        return text
+
+
 def clean(value: Any) -> str:
     """Return the text of a value, "" when it is empty, blank, null or None."""
     if value is None or isinstance(value, bool | dict | list):
         return ""
-    text = str(value).strip()
+    text = fix_text(str(value).strip())
     return "" if text.casefold() in _NO_VALUE else text
 
 

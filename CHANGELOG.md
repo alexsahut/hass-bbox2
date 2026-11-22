@@ -4,6 +4,17 @@ Ce fork (`alexsahut/hass-bbox2`) part de la version amont **1.5.4** de
 [cyr-ius/hass-bbox2](https://github.com/cyr-ius/hass-bbox2). Les versions suivent
 `MAJOR.MINOR.PATCH` (politique : `docs/maintenance/maintenance.md`, section 3).
 
+## 2.0.3
+
+Décodage des textes de la box (S12). Aucun `unique_id` ne change.
+
+- **Textes encodés deux fois** : la box renvoie certains textes des hôtes encodés
+  deux fois en UTF-8 (fabricant « GÃ©nÃ©rique » au lieu de « Générique »). Tout
+  texte d'hôte (noms, `informations`, libellés du choix des appareils) est réparé :
+  si, encodé en latin-1, il se décode en UTF-8, c'est cette version qui est
+  retenue ; sinon il est laissé tel quel. Un texte déjà correct n'est pas modifié.
+- Tests ajoutés.
+
 ## 2.0.2
 
 Suivi d'appareils utilisable (S11). Aucun `unique_id` ne change.
