@@ -78,7 +78,10 @@ identifier of the box (its LAN MAC address) does not depend on the password: the
 ### Options
 
 - **Refresh rate** (seconds, default 60).
-- **Track connected devices** (device trackers, default on, needs the password).
+- **Track connected devices** (device trackers, default off, needs the password). It creates one
+  device tracker and one Home Assistant device per host known by the box (about the value of the
+  "Appareils connus" sensor, often dozens); turning it off later leaves these devices orphaned.
+  Enable it only for presence detection through the box.
 
 ### Supported routers
 

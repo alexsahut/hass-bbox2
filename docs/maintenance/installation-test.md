@@ -8,8 +8,9 @@ d'Alex). Chaque étape a un résultat attendu : noter tout écart, avec une capt
 
 ## 0. Prérequis
 
-- [ ] **Sauvegarde complète de HA** (Paramètres → Système → Sauvegardes), ou snapshot de la VM qui
-      porte HA. Noter son nom et son heure : c'est le point de retour arrière (§9).
+- [ ] **Sauvegarde complète de HA** (Paramètres → Système → Sauvegardes). Noter son nom et son
+      heure : c'est le point de retour arrière (§9). **Pas de snapshot Proxmox** de la VM : il
+      interfère avec la réplication et les sauvegardes du cluster.
 - [ ] La release `2.0.0` existe sur <https://github.com/alexsahut/hass-bbox2/releases>, avec
       l'archive `bbox.zip`.
 - [ ] Depuis HA, `mabbox.bytel.fr` se résout vers la Bbox (sinon l'erreur « dns_error » sera
@@ -78,9 +79,14 @@ Attendu :
   (« Ce n'est pas la Bbox de cette configuration ») et l'entrée reste inchangée. Aucun doublon
   d'appareil Bbox ni d'entité suffixée `_2` ;
 - le numéro de série apparaît dans les informations de l'appareil Bbox ;
-- les device trackers des appareils connectés apparaissent (option « Suivre les appareils
-  connectés », active par défaut), rattachés à l'appareil Bbox ;
+- **aucun** device tracker : l'option « Suivre les appareils connectés » est **désactivée** par
+  défaut ;
 - le capteur « Speedtest download » existe, **désactivé** par défaut.
+
+N'activer l'option « Suivre les appareils connectés » (Bouygues Bbox → **Configurer**) que si l'on
+veut la présence via la box : elle crée un device tracker **et un appareil HA par hôte connu** de la
+box (≈ la valeur du capteur « Appareils connus »), rattachés à l'appareil Bbox. La couper ensuite
+risque de laisser des appareils orphelins dans le registre.
 
 Le même formulaire change l'hôte, TLS ou la vérification du certificat (champ mot de passe laissé
 vide : il est conservé), remplace le mot de passe, ou le retire (case « Retirer le mot de passe » :
@@ -120,7 +126,7 @@ attendre un cycle (60 s).
 | Ethernet port 1…5 (désactivés) | `Up` sur les ports câblés, `Down` sinon |
 | Download / Upload occupation (raw), discard/error packet (désactivés) | entiers |
 | Speedtest download (mot de passe, désactivé) | kb/s du dernier test de la box |
-| Device trackers (mot de passe) | `home` pour les appareils connectés ; passage à `away` 1 à 2 min après une déconnexion |
+| Device trackers (mot de passe et option « Suivre les appareils connectés » activée) | `home` pour les appareils connectés ; passage à `away` 1 à 2 min après une déconnexion |
 | Bouton Refresh | l'appui relance une lecture ; **aucun effet sur la box** |
 
 Vérifier aussi qu'aucune entité ne permet d'agir sur la box (pas de switch, pas de bouton Restart).
@@ -134,22 +140,9 @@ Attendu : un fichier JSON avec `entry`, `data` et `raw`. Les champs sensibles va
 UUID. Le parcourir avant de le partager ; le joindre au rapport seulement si rien de sensible n'y
 reste en clair (sinon signaler le champ en cause, sans sa valeur).
 
-## 8. (Optionnel, décision d'Alex) Supprimer l'ancienne intégration UPnP « Bbox »
+## 8. Ancienne intégration UPnP « Bbox »
 
-Étape **séparée**, à ne faire que sur décision explicite d'Alex : elle n'est pas nécessaire au test
-du fork.
-
-Contexte : une ancienne intégration **UPnP/IGD** nommée « Bbox » est configurée mais morte (UPnP
-désactivé sur la box) et porte 17 entités indisponibles. Elle n'a aucun lien avec ce fork (domaine
-`upnp`, pas `bbox`).
-
-1. Paramètres → Appareils et services → intégration **UPnP/IGD** → entrée « Bbox ».
-2. Vérifier qu'il s'agit bien de l'entrée UPnP (et pas de « Bouygues Bbox ») et noter le nombre
-   d'entités (17 attendues).
-3. Menu ⋮ → **Supprimer**.
-
-Attendu : les 17 entités disparaissent ; l'entrée « Bouygues Bbox » et ses entités sont intactes.
-La sauvegarde du §0 permet de revenir en arrière.
+Sans objet (22/11/2026 : plus aucune intégration UPnP dans HA).
 
 ## 9. Retour arrière
 
@@ -159,8 +152,9 @@ Si le test échoue ou si Alex le décide :
 2. Marketplace → **Bouygues Bbox** → ⋮ → **Supprimer** (désinstaller), puis retirer le dépôt
    personnalisé si on ne le garde pas.
 3. Redémarrer HA : l'intégration native `bbox` n'est plus surchargée.
-4. Si l'état de HA doit revenir exactement à l'avant-test (historique, registre, intégration UPnP
-   supprimée…) : **restaurer la sauvegarde** (ou le snapshot de la VM) du §0.
+4. **Dernier recours** : restaurer la sauvegarde du §0. Elle ramène **tout** HA à son état
+   d'avant-test, pas seulement l'intégration : les modifications faites depuis (dashboard, autres
+   chantiers…) sont perdues. Ne la restaurer que si les étapes 1 à 3 ne suffisent pas.
 
 ## Rapport
 
