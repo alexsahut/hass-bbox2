@@ -4,6 +4,30 @@ Ce fork (`alexsahut/hass-bbox2`) part de la version amont **1.5.4** de
 [cyr-ius/hass-bbox2](https://github.com/cyr-ius/hass-bbox2). Les versions suivent
 `MAJOR.MINOR.PATCH` (politique : `docs/maintenance/maintenance.md`, section 3).
 
+## 2.0.2
+
+Suivi d'appareils utilisable (S11). Aucun `unique_id` ne change.
+
+- **Option « Appareils à suivre » (`tracked_devices`)** : remplace le booléen
+  `track_devices`. Menu déroulant à choix multiple des hôtes connus de la box
+  (en ligne en premier ; état et lien — Wi-Fi + bande, Ethernet — dans le libellé,
+  en français si HA est en français). **Aucun appareil par défaut** ; seuls les
+  appareils choisis ont un device tracker (activé) et un appareil HA. Sans mot de
+  passe ou entrée non chargée : seul le rafraîchissement est réglable.
+- **Noms lisibles** : `userfriendlyname`, sinon `hostname`, sinon « fabricant
+  modèle », sinon le type ; la MAC seulement en dernier recours. Doublons suffixés
+  par les 4 derniers caractères hexadécimaux de la MAC (« Acme Phone X (A1B2) »).
+  Un nom donné par l'utilisateur n'est jamais écrasé.
+- **Nettoyage au chargement** : les trackers et appareils d'hôtes de l'entrée qui
+  ne sont pas choisis sont supprimés du registre, dont les 93 de la 2.0.1. L'appareil
+  Bbox et les autres entités ne sont pas touchés. Sans mot de passe, tous sont retirés.
+- **Migration** (`MINOR_VERSION` 2, `VERSION` inchangée à 1) : `track_devices`, vrai
+  ou faux, devient `tracked_devices: []`. **Les trackers de la 2.0.1 ne sont pas
+  recréés** : après la mise à jour, choisir ses appareils dans *Configurer*. Un retour
+  à la 2.0.1 reste possible (la version majeure ne change pas) mais sans suivi, l'option
+  `track_devices` n'existant plus.
+- Fixture synthétique `hosts_synthetic.json` (pas une capture) ; tests ajoutés.
+
 ## 2.0.1
 
 Correctif d'affichage, sans changement d'entité ni d'identifiant.

@@ -6,13 +6,12 @@ from typing import Any
 
 from homeassistant.const import CONF_HOST
 from homeassistant.core import callback
-from homeassistant.helpers import device_registry as dr
 from homeassistant.helpers.entity import Entity, EntityDescription
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
 from .const import BBOX_NAME, DOMAIN, MANUFACTURER
 from .coordinator import BboxDataUpdateCoordinator
-from .helpers import finditem
+from .helpers import finditem, host_device_key
 
 
 class BboxEntity(CoordinatorEntity[BboxDataUpdateCoordinator], Entity):
@@ -68,30 +67,15 @@ class BboxDeviceEntity(BboxEntity):
         coordinator: BboxDataUpdateCoordinator,
         description: EntityDescription,
         device: dict[str, Any],
+        name: str,
     ) -> None:
-        """Initialize."""
+        """Initialize. The name comes from `hosts.host_names` (duplicates handled)."""
         super().__init__(coordinator, description)
         self._device = device
         self._mac = device["macaddress"]
-        self._device_key = f"{self.box_id}_{device['macaddress'].replace(':', '_')}"
-        if self._device.get("userfriendlyname", "") != "":
-            self._device_name = str(device["userfriendlyname"])
-        elif self._device.get("hostname") != "":
-            self._device_name = str(device["hostname"])
-        else:
-            self._device_name = device["macaddress"]
-
-        self._attr_name = str(self._device_name)
-        self._attr_unique_id = f"{self._device_key}_device_tracker"
-        self._attr_device_info = {
-            "name": str(self._device_name),
-            "identifiers": {(DOMAIN, self._device_key)},
-            "connections": {(dr.CONNECTION_NETWORK_MAC, device["macaddress"])},
-        }
-        if box := dr.async_get(coordinator.hass).async_get_device_by_identifier(
-            (DOMAIN, self.box_id), coordinator.config_entry.entry_id
-        ):
-            self._attr_device_info["via_device_id"] = box.id
+        self._device_key = host_device_key(self.box_id, self._mac)
+        self._device_name = name
+        self._attr_name = name
 
     @property
     def extra_state_attributes(self):

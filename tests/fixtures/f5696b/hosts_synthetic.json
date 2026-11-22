@@ -1,0 +1,333 @@
+[
+  {
+    "hosts": {
+      "list": [
+        {
+          "id": 1,
+          "hostname": "synth-laptop",
+          "macaddress": "02:00:00:00:00:01",
+          "ipaddress": "192.0.2.11",
+          "type": "DHCP",
+          "link": "Wifi 5",
+          "guest": 0,
+          "devicetype": "Device",
+          "firstseen": "2024-01-01T00:00:00+0100",
+          "lastseen": 0,
+          "wireless": {
+            "band": "5",
+            "rssi0": 0,
+            "static": 0
+          },
+          "ethernet": {},
+          "active": 1,
+          "informations": {
+            "manufacturer": "Acme",
+            "model": "Book",
+            "operatingSystem": "",
+            "type": "",
+            "icon": ""
+          }
+        },
+        {
+          "id": 2,
+          "hostname": "",
+          "macaddress": "02:00:00:00:00:02",
+          "ipaddress": "192.0.2.12",
+          "type": "DHCP",
+          "link": "Wifi 2.4",
+          "guest": 0,
+          "devicetype": "Device",
+          "firstseen": "2024-01-01T00:00:00+0100",
+          "lastseen": 0,
+          "wireless": {
+            "band": "2.4",
+            "rssi0": 0,
+            "static": 0
+          },
+          "ethernet": {},
+          "active": 1,
+          "informations": {
+            "manufacturer": "Acme",
+            "model": "Phone X",
+            "operatingSystem": "",
+            "type": "Phone",
+            "icon": ""
+          }
+        },
+        {
+          "id": 3,
+          "hostname": "",
+          "macaddress": "02:00:00:00:00:03",
+          "ipaddress": "",
+          "type": "DHCP",
+          "link": "Offline",
+          "guest": 0,
+          "devicetype": "Device",
+          "firstseen": "2024-01-01T00:00:00+0100",
+          "lastseen": "2024-01-02T12:00:00+0100",
+          "wireless": {
+            "band": "N/A",
+            "rssi0": 0,
+            "static": 0
+          },
+          "ethernet": {},
+          "active": 0,
+          "informations": {
+            "manufacturer": "Acme",
+            "model": "Phone X",
+            "operatingSystem": "",
+            "type": "Phone",
+            "icon": ""
+          }
+        },
+        {
+          "id": 4,
+          "hostname": "",
+          "macaddress": "02:00:00:00:00:04",
+          "ipaddress": "192.0.2.14",
+          "type": "DHCP",
+          "link": "Ethernet",
+          "guest": 0,
+          "devicetype": "Device",
+          "firstseen": "2024-01-01T00:00:00+0100",
+          "lastseen": 0,
+          "wireless": {
+            "band": "N/A",
+            "rssi0": 0,
+            "static": 0
+          },
+          "ethernet": {
+            "physicalport": 2,
+            "speed": 1000
+          },
+          "active": 1,
+          "informations": {
+            "manufacturer": "",
+            "model": "Cam-1",
+            "operatingSystem": "",
+            "type": "Camera",
+            "icon": ""
+          }
+        },
+        {
+          "id": 5,
+          "hostname": "",
+          "macaddress": "02:00:00:00:00:05",
+          "ipaddress": "",
+          "type": "DHCP",
+          "link": "Ethernet",
+          "guest": 0,
+          "devicetype": "Device",
+          "firstseen": "2024-01-01T00:00:00+0100",
+          "lastseen": "2024-01-02T12:00:00+0100",
+          "wireless": {
+            "band": "N/A",
+            "rssi0": 0,
+            "static": 0
+          },
+          "ethernet": {
+            "physicalport": 2,
+            "speed": 1000
+          },
+          "active": 0,
+          "informations": {
+            "manufacturer": "",
+            "model": "",
+            "operatingSystem": "",
+            "type": "Printer",
+            "icon": ""
+          }
+        },
+        {
+          "id": 6,
+          "hostname": "",
+          "macaddress": "02:00:00:00:00:06",
+          "ipaddress": "",
+          "type": "DHCP",
+          "link": "Offline",
+          "guest": 0,
+          "devicetype": "Device",
+          "firstseen": "2024-01-01T00:00:00+0100",
+          "lastseen": "2024-01-02T12:00:00+0100",
+          "wireless": {
+            "band": "N/A",
+            "rssi0": 0,
+            "static": 0
+          },
+          "ethernet": {},
+          "active": 0,
+          "informations": {
+            "manufacturer": "",
+            "model": "",
+            "operatingSystem": "",
+            "type": "",
+            "icon": ""
+          }
+        },
+        {
+          "id": 7,
+          "hostname": "",
+          "macaddress": "02:00:00:00:00:07",
+          "ipaddress": "",
+          "type": "DHCP",
+          "link": "Offline",
+          "guest": 0,
+          "devicetype": "Device",
+          "firstseen": "2024-01-01T00:00:00+0100",
+          "lastseen": "2024-01-02T12:00:00+0100",
+          "wireless": {
+            "band": "N/A",
+            "rssi0": 0,
+            "static": 0
+          },
+          "ethernet": {},
+          "active": 0,
+          "userfriendlyname": "Living room TV",
+          "informations": {
+            "manufacturer": "Acme",
+            "model": "TV",
+            "operatingSystem": "",
+            "type": "",
+            "icon": ""
+          }
+        },
+        {
+          "id": 8,
+          "hostname": "   ",
+          "macaddress": "02:00:00:00:00:08",
+          "ipaddress": "192.0.2.18",
+          "type": "DHCP",
+          "link": "Wifi",
+          "guest": 0,
+          "devicetype": "Device",
+          "firstseen": "2024-01-01T00:00:00+0100",
+          "lastseen": 0,
+          "wireless": {
+            "band": "N/A",
+            "rssi0": 0,
+            "static": 0
+          },
+          "ethernet": {},
+          "active": 1,
+          "informations": {
+            "manufacturer": null,
+            "model": "  ",
+            "type": "Set-top box"
+          }
+        },
+        {
+          "id": 9,
+          "hostname": "",
+          "macaddress": "02:00:00:00:00:09",
+          "ipaddress": "",
+          "type": "DHCP",
+          "link": "Offline",
+          "guest": 0,
+          "devicetype": "Device",
+          "firstseen": "2024-01-01T00:00:00+0100",
+          "lastseen": "2024-01-02T12:00:00+0100",
+          "wireless": {
+            "band": "N/A",
+            "rssi0": 0,
+            "static": 0
+          },
+          "ethernet": {},
+          "active": 0,
+          "informations": {
+            "manufacturer": "Acme",
+            "model": "",
+            "operatingSystem": "",
+            "type": "",
+            "icon": ""
+          }
+        },
+        {
+          "id": 10,
+          "hostname": "",
+          "macaddress": "02:00:00:00:00:0a",
+          "ipaddress": "",
+          "type": "DHCP",
+          "link": "Offline",
+          "guest": 0,
+          "devicetype": "Sensor",
+          "firstseen": "2024-01-01T00:00:00+0100",
+          "lastseen": "2024-01-02T12:00:00+0100",
+          "wireless": {
+            "band": "N/A",
+            "rssi0": 0,
+            "static": 0
+          },
+          "ethernet": {},
+          "active": 0
+        },
+        {
+          "id": 11,
+          "hostname": "dup-host",
+          "macaddress": "02:00:00:00:00:0b",
+          "ipaddress": "192.0.2.21",
+          "type": "DHCP",
+          "link": "Wifi 5",
+          "guest": 0,
+          "devicetype": "Device",
+          "firstseen": "2024-01-01T00:00:00+0100",
+          "lastseen": 0,
+          "wireless": {
+            "band": "5",
+            "rssi0": 0,
+            "static": 0
+          },
+          "ethernet": {},
+          "active": 1
+        },
+        {
+          "id": 12,
+          "hostname": "Dup-Host",
+          "macaddress": "02:00:00:00:00:0c",
+          "ipaddress": "192.0.2.22",
+          "type": "DHCP",
+          "link": "Ethernet",
+          "guest": 0,
+          "devicetype": "Device",
+          "firstseen": "2024-01-01T00:00:00+0100",
+          "lastseen": 0,
+          "wireless": {
+            "band": "N/A",
+            "rssi0": 0,
+            "static": 0
+          },
+          "ethernet": {
+            "physicalport": 2,
+            "speed": 1000
+          },
+          "active": 1
+        },
+        {
+          "id": 13,
+          "hostname": "null",
+          "macaddress": "02:00:00:00:00:0d",
+          "ipaddress": "",
+          "type": "DHCP",
+          "link": "Offline",
+          "guest": 0,
+          "devicetype": "Device",
+          "firstseen": "2024-01-01T00:00:00+0100",
+          "lastseen": "2024-01-02T12:00:00+0100",
+          "wireless": {
+            "band": "N/A",
+            "rssi0": 0,
+            "static": 0
+          },
+          "ethernet": {},
+          "active": 0,
+          "informations": {
+            "manufacturer": "",
+            "model": "",
+            "operatingSystem": "",
+            "type": "Device",
+            "icon": ""
+          }
+        }
+      ]
+    }
+  }
+]

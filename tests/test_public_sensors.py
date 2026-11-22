@@ -314,7 +314,14 @@ async def test_unique_ids_of_existing_entities_are_frozen(
 ) -> None:
     """Every entity keeps its key; the prefix is the LAN MAC address of the box."""
     hass.config_entries.async_update_entry(
-        config_entry, options={"track_devices": True}
+        config_entry,
+        options={
+            "tracked_devices": [
+                "00:01:02:03:04:0e",
+                "01:02:03:04:05:06",
+                "01:02:03:04:05:f9",
+            ]
+        },
     )
     await setup_entry(hass, config_entry)
     for domain, keys in EXISTING_KEYS.items():

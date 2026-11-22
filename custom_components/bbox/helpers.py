@@ -42,3 +42,12 @@ def box_identifier(lan_ip: Any) -> str | None:
         return None
     mac = finditem(lan_ip, "lan.ip.mac")
     return format_mac(str(mac)) if mac else None
+
+
+def host_device_key(box_id: str, mac: str) -> str:
+    """Return the key of a host: `{box_id}_{mac}`, the MAC with `_` for `:`.
+
+    The device identifier is `(DOMAIN, key)`; it never changes, whatever the
+    name of the host.
+    """
+    return f"{box_id}_{mac.replace(':', '_')}"

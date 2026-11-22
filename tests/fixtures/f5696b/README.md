@@ -17,3 +17,20 @@ MAC localement administrées 02:00:00:00:00:xx). La structure JSON est intacte.
 - Accès par l'IP de la box (`https://192.168.1.1/api/v1/...`) : réponse
   `302 Found` avec `Location: https://mabbox.bytel.fr:443/api/v1/<endpoint>` et
   corps vide.
+
+## `hosts_synthetic.json` : fixture SYNTHÉTIQUE (pas une capture)
+
+`hosts` n'existe qu'en 401 ci-dessus : aucune capture authentifiée n'est dans le
+dépôt. `hosts_synthetic.json` est **inventé de toutes pièces** (S11) : il
+reproduit la *structure* décrite par un utilisateur du firmware 25.5.76
+(`hostname` vide, `informations{manufacturer, model, operatingSystem, type, icon}`,
+`devicetype`, `link`, `wireless.band`, `active`, `firstseen`/`lastseen`), avec des
+adresses MAC localement administrées `02:00:00:00:00:xx`, des IP de documentation
+`192.0.2.0/24`, et des fabricants/modèles génériques (« Acme »).
+
+Cas couverts (octet final de la MAC) : `01` hostname présent ; `02`/`03`
+manufacturer + model identiques (doublon) ; `04` model seul ; `05` type seul ;
+`06` rien (→ MAC) ; `07` `userfriendlyname` ; `08` valeurs blanches / `null` puis
+type ; `09` manufacturer seul ; `10` `devicetype` seul ; `11`/`12` même hostname à
+la casse près (doublon) ; `13` `"null"` + type générique (→ MAC). Actifs / inactifs ;
+Wi-Fi 5 GHz, Wi-Fi 2,4 GHz, Wi-Fi sans bande, Ethernet, Offline.
