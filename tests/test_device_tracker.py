@@ -1,5 +1,7 @@
 """Tests of the device trackers (they need the hosts, so a password)."""
 
+from typing import Any
+
 import pytest
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import STATE_HOME, STATE_NOT_HOME, STATE_UNAVAILABLE
@@ -11,6 +13,12 @@ from .conftest import FakeBox
 from .const import AUTHENTICATED_ANSWERS, BOX_ID
 
 HOSTS = AUTHENTICATED_ANSWERS["hosts"]
+
+
+@pytest.fixture(name="options")
+def get_options() -> dict[str, Any]:
+    """The option "Track connected devices" is enabled (it is off by default)."""
+    return {"track_devices": True}
 
 
 async def enable_trackers(hass: HomeAssistant, entry: ConfigEntry) -> list[str]:

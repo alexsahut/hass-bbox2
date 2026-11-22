@@ -11,7 +11,8 @@ DEFAULT_HOST = "mabbox.bytel.fr"
 DEFAULT_USE_TLS = True
 DEFAULT_VERIFY_SSL = True
 DEFAULT_REFRESH_RATE = 60
-DEFAULT_TRACK_DEVICES = True
+# Off: one device_tracker and one device per host known by the box
+DEFAULT_TRACK_DEVICES = False
 
 TO_REDACT = {
     "account",

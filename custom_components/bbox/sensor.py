@@ -144,7 +144,7 @@ def _last_latency(data: dict[str, Any], series: str) -> float | None:
 SENSOR_TYPES: tuple[BboxSensorDescription, ...] = (
     BboxSensorDescription(
         key="info.device.temperature.current",
-        name="System Temperature",
+        translation_key="system_temperature",
         native_unit_of_measurement=UnitOfTemperature.CELSIUS,
         device_class=SensorDeviceClass.TEMPERATURE,
         icon="mdi:thermometer",
@@ -155,7 +155,7 @@ SENSOR_TYPES: tuple[BboxSensorDescription, ...] = (
     ),
     BboxSensorDescription(
         key="wan_ip_stats.wan.ip.stats.rx.bytes",
-        name="Downloaded",
+        translation_key="downloaded",
         device_class=SensorDeviceClass.DATA_SIZE,
         native_unit_of_measurement=UnitOfInformation.KILOBYTES,
         icon="mdi:download-network",
@@ -164,21 +164,21 @@ SENSOR_TYPES: tuple[BboxSensorDescription, ...] = (
     ),
     BboxSensorDescription(
         key="wan_ip_stats.wan.ip.stats.rx.packetsdiscards",
-        name="Download discard packet",
+        translation_key="download_discarded_packets",
         icon="mdi:upload-network",
         state_class=SensorStateClass.TOTAL_INCREASING,
         entity_registry_enabled_default=False,
     ),
     BboxSensorDescription(
         key="wan_ip_stats.wan.ip.stats.rx.packetserrors",
-        name="Download error packet",
+        translation_key="download_error_packets",
         icon="mdi:upload-network",
         state_class=SensorStateClass.TOTAL_INCREASING,
         entity_registry_enabled_default=False,
     ),
     BboxSensorDescription(
         key="wan_ip_stats.wan.ip.stats.rx.bandwidth",
-        name="Download speed",
+        translation_key="download_speed",
         device_class=SensorDeviceClass.DATA_RATE,
         icon="mdi:upload-network",
         value_fn=lambda x: float(x),
@@ -187,7 +187,7 @@ SENSOR_TYPES: tuple[BboxSensorDescription, ...] = (
     ),
     BboxSensorDescription(
         key="wan_ip_stats.wan.ip.stats.rx.occupation",
-        name="Download bandwidth occupation",
+        translation_key="download_occupation",
         icon="mdi:gauge",
         get_value=lambda self: _occupation_percent(self.coordinator.data, "rx"),
         native_unit_of_measurement=PERCENTAGE,
@@ -195,7 +195,7 @@ SENSOR_TYPES: tuple[BboxSensorDescription, ...] = (
     ),
     BboxSensorDescription(
         key="wan_ip_stats.wan.ip.stats.rx.occupation_raw",
-        name="Download occupation (raw)",
+        translation_key="download_occupation_raw",
         icon="mdi:gauge",
         # Raw field of the box, its unit is not documented (see maintenance.md)
         source="wan_ip_stats.wan.ip.stats.rx.occupation",
@@ -204,7 +204,7 @@ SENSOR_TYPES: tuple[BboxSensorDescription, ...] = (
     ),
     BboxSensorDescription(
         key="wan_ip_stats.wan.ip.stats.tx.bytes",
-        name="Uploaded",
+        translation_key="uploaded",
         device_class=SensorDeviceClass.DATA_SIZE,
         native_unit_of_measurement=UnitOfInformation.KILOBYTES,
         icon="mdi:upload-network",
@@ -213,21 +213,21 @@ SENSOR_TYPES: tuple[BboxSensorDescription, ...] = (
     ),
     BboxSensorDescription(
         key="wan_ip_stats.wan.ip.stats.tx.packetsdiscards",
-        name="Upload discard packet",
+        translation_key="upload_discarded_packets",
         icon="mdi:upload-network",
         state_class=SensorStateClass.TOTAL_INCREASING,
         entity_registry_enabled_default=False,
     ),
     BboxSensorDescription(
         key="wan_ip_stats.wan.ip.stats.tx.packetserrors",
-        name="Upload error packet",
+        translation_key="upload_error_packets",
         icon="mdi:upload-network",
         state_class=SensorStateClass.TOTAL_INCREASING,
         entity_registry_enabled_default=False,
     ),
     BboxSensorDescription(
         key="wan_ip_stats.wan.ip.stats.tx.bandwidth",
-        name="Upload speed",
+        translation_key="upload_speed",
         device_class=SensorDeviceClass.DATA_RATE,
         icon="mdi:upload-network",
         value_fn=lambda x: float(x),
@@ -236,7 +236,7 @@ SENSOR_TYPES: tuple[BboxSensorDescription, ...] = (
     ),
     BboxSensorDescription(
         key="wan_ip_stats.wan.ip.stats.tx.occupation",
-        name="Upload bandwidth occupation",
+        translation_key="upload_occupation",
         icon="mdi:gauge",
         get_value=lambda self: _occupation_percent(self.coordinator.data, "tx"),
         native_unit_of_measurement=PERCENTAGE,
@@ -244,7 +244,7 @@ SENSOR_TYPES: tuple[BboxSensorDescription, ...] = (
     ),
     BboxSensorDescription(
         key="wan_ip_stats.wan.ip.stats.tx.occupation_raw",
-        name="Upload occupation (raw)",
+        translation_key="upload_occupation_raw",
         icon="mdi:gauge",
         # Raw field of the box, its unit is not documented (see maintenance.md)
         source="wan_ip_stats.wan.ip.stats.tx.occupation",
@@ -253,22 +253,22 @@ SENSOR_TYPES: tuple[BboxSensorDescription, ...] = (
     ),
     BboxSensorDescription(
         key="wan_ip.wan.ip.address",
-        name="IP Address",
+        translation_key="ip_address",
         icon="mdi:wan",
     ),
     BboxSensorDescription(
         key="wan_ip.wan.ip.ip6address.0.ipaddress",
-        name="IPv6 Address",
+        translation_key="ipv6_address",
         icon="mdi:wan",
     ),
     BboxSensorDescription(
         key="info.device.numberofboots",
-        name="Boot counter",
+        translation_key="boot_counter",
         icon="mdi:counter",
     ),
     BboxSensorDescription(
         key="info.device.boot_time",
-        name="Last boot",
+        translation_key="last_boot",
         icon="mdi:clock",
         device_class=SensorDeviceClass.TIMESTAMP,
         data_sources=("info",),
@@ -278,7 +278,7 @@ SENSOR_TYPES: tuple[BboxSensorDescription, ...] = (
     ),
     BboxSensorDescription(
         key="memory.device.mem.free",
-        name="Memory free",
+        translation_key="memory_free",
         icon="mdi:gauge",
         get_value=lambda self: (
             int(finditem(self.coordinator.data, "memory.device.mem.free") * 100)
@@ -289,7 +289,7 @@ SENSOR_TYPES: tuple[BboxSensorDescription, ...] = (
     ),
     BboxSensorDescription(
         key="speedtest_infos.speedtest.latestmeasurements.download.0.speed",
-        name="Speedtest download",
+        translation_key="speedtest_download",
         icon="mdi:speedometer",
         device_class=SensorDeviceClass.DATA_RATE,
         value_fn=lambda x: _to_float(x),

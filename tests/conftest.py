@@ -146,15 +146,21 @@ def mock_public_router(box_factory) -> FakeBox:
     return box_factory(password=False)
 
 
+@pytest.fixture(name="options")
+def get_options() -> dict[str, Any]:
+    """Options of the mock config entries (default: none, as after the setup)."""
+    return {}
+
+
 @pytest.fixture(name="config_entry")
-def get_config_entry(hass: HomeAssistant) -> ConfigEntry:
+def get_config_entry(hass: HomeAssistant, options: dict[str, Any]) -> ConfigEntry:
     """Create and register mock config entry (with a password)."""
     config_entry = MockConfigEntry(
         domain=DOMAIN,
         source=SOURCE_USER,
         data=MOCK_USER_INPUT,
         unique_id=BOX_ID,
-        options={},
+        options=options,
         entry_id="123456",
     )
     config_entry.add_to_hass(hass)
@@ -162,14 +168,16 @@ def get_config_entry(hass: HomeAssistant) -> ConfigEntry:
 
 
 @pytest.fixture(name="public_config_entry")
-def get_public_config_entry(hass: HomeAssistant) -> ConfigEntry:
+def get_public_config_entry(
+    hass: HomeAssistant, options: dict[str, Any]
+) -> ConfigEntry:
     """Create and register a mock config entry without password."""
     config_entry = MockConfigEntry(
         domain=DOMAIN,
         source=SOURCE_USER,
         data=MOCK_PUBLIC_INPUT,
         unique_id=BOX_ID,
-        options={},
+        options=options,
         entry_id="654321",
     )
     config_entry.add_to_hass(hass)

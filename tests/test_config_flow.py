@@ -369,6 +369,9 @@ async def test_options_flow(hass: HomeAssistant, router: FakeBox) -> None:
 
     result = await hass.config_entries.options.async_init(entry.entry_id)
     assert result["type"] == FlowResultType.FORM
+    defaults = {str(key): key.default() for key in result["data_schema"].schema}
+    # device tracking is off by default (one device per host of the box)
+    assert defaults == {"refresh_rate": 60, "track_devices": False}
     result = await hass.config_entries.options.async_configure(
         result["flow_id"], {"refresh_rate": 120, "track_devices": False}
     )
