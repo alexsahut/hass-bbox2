@@ -6,13 +6,24 @@ Ce fork (`alexsahut/hass-bbox2`) part de la version amont **1.5.4** de
 
 ## 2.0.3
 
-Décodage des textes de la box (S12). Aucun `unique_id` ne change.
+Décodage des textes de la box, traceurs et suppression d'appareils (S12). Aucun
+`unique_id` ne change.
 
 - **Textes encodés deux fois** : la box renvoie certains textes des hôtes encodés
   deux fois en UTF-8 (fabricant « GÃ©nÃ©rique » au lieu de « Générique »). Tout
   texte d'hôte (noms, `informations`, libellés du choix des appareils) est réparé :
   si, encodé en latin-1, il se décode en UTF-8, c'est cette version qui est
   retenue ; sinon il est laissé tel quel. Un texte déjà correct n'est pas modifié.
+- **Traceurs (HA 2026.11)** : le traceur d'un appareil choisi est actif dès le
+  premier chargement (HA 2026.11 le créait désactivé), rattaché à l'appareil de
+  l'hôte et non plus à l'appareil Bbox, et nommé comme cet appareil, y compris le
+  nom donné par l'utilisateur (plus de « BBOX … »). Les traceurs existants sont
+  déplacés vers l'appareil de l'hôte ; `unique_id` (MAC) et `entity_id` renommés
+  conservés.
+- **Suppression d'un appareil** depuis la page Appareils de HA : la MAC de l'hôte
+  est retirée de `tracked_devices` (les autres options, dont le rafraîchissement,
+  sont conservées), il n'est donc pas recréé au chargement suivant. L'appareil Bbox
+  ne peut pas être supprimé.
 - Tests ajoutés.
 
 ## 2.0.2

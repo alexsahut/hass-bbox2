@@ -11,9 +11,14 @@ from homeassistant.const import STATE_HOME, STATE_NOT_HOME, STATE_UNAVAILABLE
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers import device_registry as dr
 from homeassistant.helpers import entity_registry as er
+from homeassistant.setup import async_setup_component
 from pytest_homeassistant_custom_component.common import MockConfigEntry
+from pytest_homeassistant_custom_component.typing import WebSocketGenerator
 
-from custom_components.bbox import _async_release_device
+from custom_components.bbox import (
+    _async_release_device,
+    async_remove_config_entry_device,
+)
 from custom_components.bbox.const import DOMAIN
 
 from .common import setup_entry
@@ -556,3 +561,112 @@ async def test_reconfigure_adds_the_password(
     assert before.items() <= after.items()
     assert len(trackers(hass, public_config_entry)) == 3
     assert hass.states.get("device_tracker.host_001").state == STATE_HOME
+
+
+async def remove_device(
+    hass: HomeAssistant, hass_ws_client: WebSocketGenerator, device_id: str
+) -> dict[str, Any]:
+    """Remove a device as the Devices page of Home Assistant does."""
+    assert await async_setup_component(hass, "config", {})
+    client = await hass_ws_client(hass)
+    await client.send_json_auto_id(
+        {"type": "config/device_registry/remove", "device_id": device_id}
+    )
+    response = await client.receive_json()
+    await hass.async_block_till_done()
+    return response
+
+
+async def test_remove_the_device_of_a_host(
+    hass: HomeAssistant,
+    config_entry: ConfigEntry,
+    router: FakeBox,
+    hass_ws_client: WebSocketGenerator,
+) -> None:
+    """Removing the device of a host removes its MAC address from the chosen
+    hosts, keeps the other options; nothing is created again at the next load."""
+    hass.config_entries.async_update_entry(
+        config_entry,
+        options={"refresh_rate": 120, "tracked_devices": [MAC_1, MAC_4, MAC_6]},
+    )
+    await setup_entry(hass, config_entry)
+    device = dr.async_get(hass).async_get_device_by_identifier(
+        (DOMAIN, f"{BOX_ID}_01_02_03_04_05_f9"), config_entry.entry_id
+    )
+
+    response = await remove_device(hass, hass_ws_client, device.id)
+
+    assert response["success"]
+    assert config_entry.options == {
+        "refresh_rate": 120,
+        "tracked_devices": [MAC_1, MAC_6],
+    }
+    assert config_entry.state == ConfigEntryState.LOADED
+    assert {e.unique_id for e in trackers(hass, config_entry)} == {MAC_1, MAC_6}
+    assert {d.name for d in host_devices(hass, config_entry)} == {
+        "Host-001",
+        "Host-006",
+    }
+    assert hass.states.get("device_tracker.host_004") is None
+
+    assert await hass.config_entries.async_reload(config_entry.entry_id)
+    await hass.async_block_till_done()
+    assert {e.unique_id for e in trackers(hass, config_entry)} == {MAC_1, MAC_6}
+    assert hass.states.get("device_tracker.host_004") is None
+
+
+async def test_the_device_of_the_box_can_not_be_removed(
+    hass: HomeAssistant,
+    config_entry: ConfigEntry,
+    router: FakeBox,
+    hass_ws_client: WebSocketGenerator,
+) -> None:
+    """The Bbox device is refused; the options are not changed."""
+    hass.config_entries.async_update_entry(
+        config_entry,
+        options={"refresh_rate": 120, "tracked_devices": [MAC_1, MAC_4, MAC_6]},
+    )
+    await setup_entry(hass, config_entry)
+    box = dr.async_get(hass).async_get_device_by_identifier(
+        (DOMAIN, BOX_ID), config_entry.entry_id
+    )
+
+    response = await remove_device(hass, hass_ws_client, box.id)
+
+    assert not response["success"]
+    assert dr.async_get(hass).async_get(box.id) is not None
+    assert config_entry.options == {
+        "refresh_rate": 120,
+        "tracked_devices": [MAC_1, MAC_4, MAC_6],
+    }
+    assert len(trackers(hass, config_entry)) == 3
+
+
+async def test_remove_a_host_known_by_its_identifier_or_not_chosen(
+    hass: HomeAssistant, config_entry: ConfigEntry, router: FakeBox
+) -> None:
+    """A host device without MAC connection is found by its identifier (MAC in
+    upper case in the options); a device of no chosen host is removed without
+    changing the options."""
+    hass.config_entries.async_update_entry(
+        config_entry,
+        options={"refresh_rate": 90, "tracked_devices": [MAC_1.upper(), MAC_4]},
+    )
+    devs = dr.async_get(hass)
+    by_key = devs.async_get_or_create(
+        config_entry_id=config_entry.entry_id,
+        identifiers={(DOMAIN, f"{BOX_ID}_00_01_02_03_04_0e")},
+    )
+    other = devs.async_get_or_create(
+        config_entry_id=config_entry.entry_id,
+        connections={(dr.CONNECTION_NETWORK_MAC, "02:00:00:00:99:99")},
+    )
+
+    assert await async_remove_config_entry_device(hass, config_entry, other)
+    assert config_entry.options == {
+        "refresh_rate": 90,
+        "tracked_devices": [MAC_1.upper(), MAC_4],
+    }
+
+    assert await async_remove_config_entry_device(hass, config_entry, by_key)
+    assert config_entry.options == {"refresh_rate": 90, "tracked_devices": [MAC_4]}
