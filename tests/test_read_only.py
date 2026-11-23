@@ -10,31 +10,20 @@ explicitly admitted below.
 from typing import Any
 
 import pytest
-from homeassistant.components.alarm_control_panel import AlarmControlPanelEntity
 from homeassistant.components.binary_sensor import BinarySensorEntity
 from homeassistant.components.button import ButtonEntity, ButtonEntityDescription
 from homeassistant.components.calendar import CalendarEntity
 from homeassistant.components.climate import ClimateEntity
 from homeassistant.components.cover import CoverEntity
-from homeassistant.components.date import DateEntity
-from homeassistant.components.datetime import DateTimeEntity
 from homeassistant.components.device_tracker import ScannerEntity
-from homeassistant.components.lawn_mower import LawnMowerEntity
 from homeassistant.components.lock import LockEntity
-from homeassistant.components.media_player import MediaPlayerEntity
-from homeassistant.components.notify import NotifyEntity
 from homeassistant.components.number import NumberEntity
-from homeassistant.components.scene import Scene
 from homeassistant.components.select import SelectEntity
 from homeassistant.components.sensor import SensorEntity
 from homeassistant.components.switch import SwitchEntity
 from homeassistant.components.text import TextEntity
-from homeassistant.components.time import TimeEntity
-from homeassistant.components.todo import TodoListEntity
 from homeassistant.components.update import UpdateEntity
-from homeassistant.components.vacuum import StateVacuumEntity
 from homeassistant.components.valve import ValveEntity
-from homeassistant.components.water_heater import WaterHeaterEntity
 from homeassistant.config_entries import ConfigEntry, ConfigEntryState
 from homeassistant.const import Platform
 from homeassistant.core import HomeAssistant, ServiceCall
@@ -61,47 +50,31 @@ ADMITTED: dict[str, type[Entity]] = {
 }
 REFRESH_KEY = "refresh"
 
-# Home Assistant entities which act on a device: none may be created, whatever
-# its platform (ToggleEntity covers switch, light, fan, siren, humidifier,
-# remote; CalendarEntity and the ACTION_COMPONENTS act without being toggles).
+# Base classes are judged by the Home Assistant component they come from: an
+# entity may only inherit classes of the admitted components (an allowlist, so
+# that any other entity platform, present or future, is refused). Classes of
+# `homeassistant.helpers` (Entity, CoordinatorEntity, RestoreEntity...) and of
+# `custom_components.bbox` are neutral, except ToggleEntity, which acts.
 # ButtonEntity is checked apart: only the refresh button is admitted.
-ACTION_ENTITIES: tuple[type[Entity], ...] = (
-    ToggleEntity,
-    NumberEntity,
-    SelectEntity,
-    TextEntity,
-    DateEntity,
-    TimeEntity,
-    DateTimeEntity,
-    CoverEntity,
-    LockEntity,
-    ValveEntity,
-    ClimateEntity,
-    WaterHeaterEntity,
-    MediaPlayerEntity,
-    StateVacuumEntity,
-    LawnMowerEntity,
-    AlarmControlPanelEntity,
-    UpdateEntity,
-    Scene,
-    NotifyEntity,
-    TodoListEntity,
-    CalendarEntity,
-)
-# Components whose entities act without being toggles, and whose module needs
-# a dependency absent from the tests (turbojpeg, hassil, mutagen): their entity
-# classes are recognised by the module of a base class, without import.
-ACTION_COMPONENTS = ("camera", "assist_satellite", "tts", "conversation", "ai_task")
+ADMITTED_COMPONENTS = frozenset(str(p) for p in ADMITTED)
+COMPONENTS_PACKAGE = "homeassistant.components."
 
 
-def _action_component(entity: Entity) -> str | None:
-    """Return the action component a base class of the entity comes from."""
-    for cls in type(entity).__mro__:
-        for component in ACTION_COMPONENTS:
-            module = f"homeassistant.components.{component}"
-            if cls.__module__ == module or cls.__module__.startswith(f"{module}."):
-                return f"{cls.__name__} ({component})"
-    return None
+def _component(cls: type) -> str | None:
+    """Return the Home Assistant component the class comes from, or None."""
+    if not cls.__module__.startswith(COMPONENTS_PACKAGE):
+        return None
+    return cls.__module__.removeprefix(COMPONENTS_PACKAGE).split(".")[0]
+
+
+def _foreign_bases(entity: Entity) -> list[str]:
+    """Return the base classes of the entity which are not admitted."""
+    return [
+        f"{cls.__name__} ({component or 'action'})"
+        for cls in type(entity).__mro__
+        if (component := _component(cls)) not in (None, *ADMITTED_COMPONENTS)
+        or cls is ToggleEntity
+    ]
 
 
 @pytest.fixture(name="options")
@@ -145,10 +118,8 @@ def _refusal(domain: str, entity: Entity) -> str | None:
         return f"platform {domain} not admitted"
     if not isinstance(entity, expected):
         return f"{type(entity).__name__} is not a {expected.__name__}"
-    if action := next((c for c in ACTION_ENTITIES if isinstance(entity, c)), None):
-        return f"{type(entity).__name__} is a {action.__name__} (action)"
-    if action_component := _action_component(entity):
-        return f"{type(entity).__name__} is a {action_component} (action)"
+    if foreign := _foreign_bases(entity):
+        return f"{type(entity).__name__} inherits {', '.join(foreign)}: not admitted"
     key = getattr(getattr(entity, "entity_description", None), "key", None)
     if isinstance(entity, ButtonEntity) and (
         type(entity) is not RefreshButton or key != REFRESH_KEY
@@ -164,7 +135,8 @@ async def test_entities_are_read_only(
 
     Home Assistant does not add the entities disabled by default to their
     platform: every registry entry of the entry is enabled and the entry
-    reloaded, so that every entity the integration creates is checked.
+    reloaded, so that every entity the integration creates is checked; the
+    registry is read again after the reload and a refresh.
     """
     await setup_entry(hass, config_entry)
     registry = er.async_get(hass)
@@ -175,7 +147,11 @@ async def test_entities_are_read_only(
     assert await hass.config_entries.async_reload(config_entry.entry_id)
     await hass.async_block_till_done()
     assert config_entry.state == ConfigEntryState.LOADED
+    # Entities may also be added on a later update (ports of binary_sensor)
+    await config_entry.runtime_data.async_refresh()
+    await hass.async_block_till_done()
 
+    entries = er.async_entries_for_config_entry(registry, config_entry.entry_id)
     entities = _entities(hass, config_entry)
     # The check is meaningful only if every registry entry is a checked entity
     unchecked = sorted(
@@ -239,8 +215,25 @@ def test_added_platform_is_refused(platform: Platform) -> None:
     assert _refused_platforms([*PLATFORMS, platform]) == [str(platform)]
 
 
-class _SwitchingSensor(SensorEntity, SwitchEntity):
-    """A sensor which also acts on the box."""
+# Action classes of Home Assistant, each mixed into a sensor below
+ACTION_CLASSES: tuple[type[Entity], ...] = (
+    SwitchEntity,
+    ToggleEntity,
+    NumberEntity,
+    SelectEntity,
+    TextEntity,
+    CoverEntity,
+    LockEntity,
+    ValveEntity,
+    ClimateEntity,
+    UpdateEntity,
+    CalendarEntity,
+)
+
+
+def _action_sensor(action: type[Entity]) -> Entity:
+    """Return a sensor which also inherits the action class."""
+    return type(f"_{action.__name__}Sensor", (SensorEntity, action), {})()
 
 
 class _Camera(Entity):
@@ -254,12 +247,27 @@ class _FilmingSensor(SensorEntity, _Camera):
     """A sensor which also acts as a camera."""
 
 
-class _CalendarSensor(SensorEntity, CalendarEntity):
-    """A sensor which can also create events."""
+class _Infrared(Entity):
+    """Stand-in of InfraredEmitterEntity, a component absent from the lists."""
+
+
+_Infrared.__module__ = "homeassistant.components.infrared.entity"
+
+
+class _EmittingSensor(SensorEntity, _Infrared):
+    """A sensor which also sends infrared commands."""
 
 
 class _NamedButton(ButtonEntity):
     """A button without entity description."""
+
+
+class _PressingSensor(SensorEntity, ButtonEntity):
+    """A sensor which is also a button, without entity description."""
+
+
+class _RebootButton(RefreshButton):
+    """A subclass of the refresh button, of the refresh key."""
 
 
 class _RestartButton(ButtonEntity):
@@ -268,10 +276,13 @@ class _RestartButton(ButtonEntity):
     entity_description = ButtonEntityDescription(key="restart")
 
 
-def _refresh_button(key: str) -> RefreshButton:
-    """Return a RefreshButton of the key, without coordinator."""
-    button = RefreshButton.__new__(RefreshButton)
-    button.entity_description = ButtonEntityDescription(key=key)
+def _refresh_button(
+    key: str | None, cls: type[RefreshButton] = RefreshButton
+) -> RefreshButton:
+    """Return a button of the class and key (None: no description), no coordinator."""
+    button = cls.__new__(cls)
+    if key is not None:
+        button.entity_description = ButtonEntityDescription(key=key)
     return button
 
 
@@ -281,15 +292,25 @@ def test_admitted_entities_pass() -> None:
     assert _refusal(Platform.BUTTON, _refresh_button(REFRESH_KEY)) is None
 
 
+@pytest.mark.parametrize("action", ACTION_CLASSES, ids=lambda c: c.__name__)
+def test_action_sensor_is_refused(action: type[Entity]) -> None:
+    """A sensor which also inherits an action class is refused, class named."""
+    reason = _refusal(Platform.SENSOR, _action_sensor(action))
+    assert reason is not None
+    assert action.__name__ in reason
+
+
 @pytest.mark.parametrize(
     ("domain", "entity", "named"),
     [
         (Platform.SWITCH, SwitchEntity(), "switch"),
-        (Platform.SENSOR, _SwitchingSensor(), "_SwitchingSensor"),
         (Platform.SENSOR, NumberEntity(), "NumberEntity"),
         (Platform.SENSOR, _FilmingSensor(), "camera"),
-        (Platform.SENSOR, _CalendarSensor(), "CalendarEntity"),
+        (Platform.SENSOR, _EmittingSensor(), "infrared"),
+        (Platform.SENSOR, _PressingSensor(), "_PressingSensor (None)"),
         (Platform.BUTTON, _NamedButton(), "_NamedButton"),
+        (Platform.BUTTON, _refresh_button(None), "RefreshButton (None)"),
+        (Platform.BUTTON, _refresh_button(REFRESH_KEY, _RebootButton), "_RebootButton"),
         (Platform.BUTTON, _RestartButton(), "_RestartButton"),
         (Platform.BUTTON, _refresh_button("restart"), "restart"),
     ],

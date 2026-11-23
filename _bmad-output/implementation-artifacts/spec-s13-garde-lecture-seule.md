@@ -55,7 +55,7 @@ context: ['{project-root}/AGENTS.md']
 - [x] `docs/maintenance/historique.md` -- ajouter la ligne S13 au tableau des stories -- traçabilité du fork.
 
 **Acceptance Criteria:**
-- Given le code actuel, when `uv run pytest tests/test_read_only.py` s'exécute, then le test passe.
+- Given le code actuel, when `uv run pytest tests/test_read_only.py --no-cov` s'exécute, then le test passe (le seuil de couverture ne vaut que pour la suite complète).
 - Given `Platform.SWITCH` ajouté localement à `PLATFORMS` (essai non commité), when le test s'exécute, then il échoue en nommant `switch`.
 - Given la suite complète, when `uv run pytest` s'exécute, then elle passe avec une couverture ≥ 85 %.
 
@@ -70,6 +70,7 @@ context: ['{project-root}/AGENTS.md']
 - Audit de la matrice SOLDÉ : chaque ligne est couverte par un test commité qui tourne et passe.
 - Essai négatif refait : `Platform.SWITCH` ajouté localement à `PLATFORMS` → `test_platforms_are_read_only` échoue (`Platform(s) not admitted (write to the box?): ['switch']`), comme les tests d'entités ; fichier restauré, `git diff` vide sur `custom_components/`.
 - Arrêt volontaire avant l'étape 4 (revue interne au tour suivant) : statut laissé `in-progress`.
+- Clôture (2026-11-23) : les notes ci-dessus sont dépassées par les étapes 4 et 5 (Review Triage Log, statut `done`) et par la Code Review ci-dessous ; PR #16 confirmée.
 
 ## Spec Change Log
 
@@ -104,7 +105,7 @@ Vérification : `tests/test_read_only.py` 19 passés ; suite complète 252 pass�
 ## Verification
 
 **Commands:**
-- `uv run pytest tests/test_read_only.py` -- expected: vert
+- `uv run pytest tests/test_read_only.py --no-cov` -- expected: vert
 - `uv run pytest` -- expected: suite verte, couverture ≥ 85 %
 - `uvx ruff@0.17.5 check . && uvx ruff@0.17.5 format --check .` -- expected: aucun écart
 
@@ -133,4 +134,13 @@ Diff `a702669...c751ab1` (3 fichiers, +424), mode `full`. Couches : blind-hunter
 | CR14 | acceptance-auditor | Reconnaissance par module testée seulement avec un substitut. | low | rejeté : absorbé par CR1 |
 | CR15 | acceptance-auditor | Approach gelée : `button` parmi les plateformes d'écriture. | false | rejeté (R11) |
 
-Reste ouvert : CR1 (medium) et CR2–CR8 (patch, low). Reprise : appliquer CR1–CR8, rejouer la Vérification, puis fusion si CI verte.
+Correctifs appliqués le 2026-11-23 (triage validé par ClaudeBox) :
+- CR1 : liste d'autorisation par composant (`ADMITTED_COMPONENTS`, `_component`, `_foreign_bases`) : toute classe parente venant de `homeassistant.components.<x>` hors sensor, binary_sensor, device_tracker, button est refusée ; `homeassistant.helpers.*` et `custom_components.bbox` neutres, sauf `ToggleEntity` (agit). `ACTION_ENTITIES`, `ACTION_COMPONENTS` et `_action_component` supprimés. Test d'un composant absent des anciennes listes (substitut `infrared`).
+- CR2 : `test_action_sensor_is_refused`, capteur hybride pour 11 classes d'action (`SwitchEntity`, `ToggleEntity`, `NumberEntity`, `SelectEntity`, `TextEntity`, `CoverEntity`, `LockEntity`, `ValveEntity`, `ClimateEntity`, `UpdateEntity`, `CalendarEntity`).
+- CR3 : `RefreshButton` sans description et capteur + bouton sans description (passent par la lecture `getattr`).
+- CR4 : sous-classe `_RebootButton(RefreshButton)` de clé `refresh` refusée.
+- CR5 : entrées du registre relues après rechargement.
+- CR6 : rafraîchissement du coordinateur avant le contrôle des entités.
+- CR7 : `--no-cov` dans l'AC et la Vérification.
+- CR8 : note de clôture dans les notes d'implémentation.
+Vérification : `tests/test_read_only.py --no-cov` 32 passés ; suite complète 265 passés, couverture 99,46 % ; ruff 0.17.5 sans écart. #16 non fusionnée (CI au tour suivant).
