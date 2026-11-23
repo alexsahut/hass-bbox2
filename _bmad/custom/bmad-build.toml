@@ -1,0 +1,13 @@
+# Surcharge d'équipe, copiée dans <projet>/_bmad/custom/bmad-build.toml.
+# Clés vérifiées contre src/bmm-skills/ship/bmad-build/customize.toml de bmad-method 6.12.0.
+# Les entrées « file: » sont résolues sous {project-root}.
+
+[workflow]
+
+persistent_facts = ["file:docs/maintenance/maintenance.md", "file:docs/maintenance/historique.md"]
+
+on_complete = """
+Rappel de fin de build : ouvrir la PR avec `gh pr create --repo alexsahut/<projet>`
+(jamais sans --repo), puis demander la relecture de ClaudeBox. Ne pas fusionner
+avant son accord.
+"""

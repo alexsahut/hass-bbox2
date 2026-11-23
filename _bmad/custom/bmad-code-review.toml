@@ -1,0 +1,7 @@
+# Surcharge d'équipe, copiée dans <projet>/_bmad/custom/bmad-code-review.toml.
+# Clés vérifiées contre src/bmm-skills/ship/bmad-code-review/customize.toml de bmad-method 6.12.0.
+# Les entrées « file: » sont résolues sous {project-root}.
+
+[workflow]
+
+persistent_facts = ["file:docs/maintenance/maintenance.md", "file:docs/maintenance/historique.md"]
