@@ -2,7 +2,7 @@
 title: 'S13 — Garde de lecture seule : aucune plateforme ni entité qui écrit vers la box'
 type: 'chore'
 created: '2026-11-23'
-status: 'in-progress'
+status: 'in-review'
 route: 'dispatch'
 review_loop_iteration: 0
 baseline_commit: 'a7026696b4a3a19d75f85e759519530af0f73828'
@@ -74,6 +74,25 @@ context: ['{project-root}/AGENTS.md']
 ## Spec Change Log
 
 ## Review Triage Log
+
+Revue du 2026-11-23, diff `a702669..73a3313` (19 kB), couches lancées : blind-hunter, edge-case-hunter, verification-gap (aucune sautée). Boucle 0, aucun intent_gap ni bad_spec.
+
+| # | Source | Constat | Verdict | Route |
+|---|--------|---------|---------|-------|
+| R1 | verification-gap (gap), edge-case 1/2/7 | Les entités désactivées par défaut (`entity_registry_enabled_default=False`, 16 descriptions) n'atteignent jamais `platform.entities` (HA interrompt l'ajout), donc `_refusal` ne contrôle pas leur classe ; le registre ne contrôle que le domaine. Un capteur + `SwitchEntity` désactivé par défaut passerait. | medium | patch : activer toutes les entrées du registre de l'entrée, recharger, puis contrôler les entités |
+| R2 | blind-hunter, edge-case 3 | `ACTION_ENTITIES` omet des classes qui agissent sans être des `ToggleEntity` (`Camera`, `CalendarEntity`, `AssistSatelliteEntity`, `TTSEntity`, `ConversationEntity`, `AITaskEntity`) : un hybride capteur + `Camera` passerait. | medium | patch : compléter le tuple |
+| R3 | blind-hunter, edge-case 4 | `_refusal` lit `entity.entity_description.key` sans garde : un bouton sans description lève `AttributeError` au lieu de nommer l'entité. | low | patch : `getattr`, repli sur le nom de classe |
+| R4 | blind-hunter | L'assertion « chaque plateforme a créé des entités » n'a pas de message nommant les plateformes vides. | low | patch : message |
+| R5 | edge-case 5, blind-hunter | `test_no_service` et `test_registry_is_read_only` ne vérifient ni `LOADED` ni la présence du bouton `refresh` : passeraient à vide sur un chargement raté. | low | patch : assertions |
+| R6 | blind-hunter | Ligne S13 de `historique.md` sans mention « sans release » ; le paragraphe Releases cite encore 233 tests. | low | patch : préciser « sans release » |
+| R7 | blind-hunter, edge-case 6 | Un service enregistré hors du domaine `bbox` (ex. `notify.*`) ne serait pas détecté. | low | rejeté : l'intégration n'enregistre rien hors plateformes ; peu probable, et le correctif (instantané du registre de services avant/après, à filtrer des services des composants HA chargés) ajoute de la complexité |
+| R8 | blind-hunter | Le mode sans mot de passe (`public_config_entry`) n'est pas chargé par le garde. | low | rejeté : entité d'action propre au mode public peu probable ; le correctif demande un second scénario d'assertions (pas de traceurs) |
+| R9 | blind-hunter | Les tests de la matrice vérifient les fonctions (`_refused_platforms`, `_services`), pas les messages des tests de garde. | low | rejeté : les gardes appellent ces mêmes fonctions et leur message est prouvé par l'essai négatif ; le correctif (`pytest.raises` autour des gardes) ajoute de la complexité |
+| R10 | blind-hunter, verification-gap (autre) | Spec : statut/notes obsolètes (« PR #16 présumé », « NON SOLDÉ »). | low | rejeté : correctif = édition de la spec. Fait : PR #16 confirmée ouverte sur `alexsahut/hass-bbox2` |
+| R11 | blind-hunter | L'Approach gelée cite `button` parmi les plateformes à refuser, la décision Q1 l'admet pour Refresh. | false | rejeté : Q1 (ClaudeBox) tranche explicitement, pas de contradiction résiduelle ; correctif = édition de la spec |
+| R12 | blind-hunter | `uv run pytest tests/test_read_only.py` sort en code 1 (seuil de couverture 85 % global sur un seul fichier), alors que l'AC dit « passe ». | low | rejeté : correctif = édition de la spec (`--no-cov`) ; les 16 tests passent et la suite complète satisfait le seuil |
+
+Avancement : triage fait, correctifs `patch` (R1 à R6) NON appliqués — arrêt volontaire au budget de temps du tour. Reprise : appliquer R1–R6, rejouer la Vérification, puis étape 5.
 
 ## Verification
 
