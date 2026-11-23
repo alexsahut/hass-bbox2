@@ -13,6 +13,7 @@ import pytest
 from homeassistant.components.alarm_control_panel import AlarmControlPanelEntity
 from homeassistant.components.binary_sensor import BinarySensorEntity
 from homeassistant.components.button import ButtonEntity, ButtonEntityDescription
+from homeassistant.components.calendar import CalendarEntity
 from homeassistant.components.climate import ClimateEntity
 from homeassistant.components.cover import CoverEntity
 from homeassistant.components.date import DateEntity
@@ -62,7 +63,8 @@ REFRESH_KEY = "refresh"
 
 # Home Assistant entities which act on a device: none may be created, whatever
 # its platform (ToggleEntity covers switch, light, fan, siren, humidifier,
-# remote). ButtonEntity is checked apart: only the refresh button is admitted.
+# remote; CalendarEntity and the ACTION_COMPONENTS act without being toggles).
+# ButtonEntity is checked apart: only the refresh button is admitted.
 ACTION_ENTITIES: tuple[type[Entity], ...] = (
     ToggleEntity,
     NumberEntity,
@@ -84,7 +86,22 @@ ACTION_ENTITIES: tuple[type[Entity], ...] = (
     Scene,
     NotifyEntity,
     TodoListEntity,
+    CalendarEntity,
 )
+# Components whose entities act without being toggles, and whose module needs
+# a dependency absent from the tests (turbojpeg, hassil, mutagen): their entity
+# classes are recognised by the module of a base class, without import.
+ACTION_COMPONENTS = ("camera", "assist_satellite", "tts", "conversation", "ai_task")
+
+
+def _action_component(entity: Entity) -> str | None:
+    """Return the action component a base class of the entity comes from."""
+    for cls in type(entity).__mro__:
+        for component in ACTION_COMPONENTS:
+            module = f"homeassistant.components.{component}"
+            if cls.__module__ == module or cls.__module__.startswith(f"{module}."):
+                return f"{cls.__name__} ({component})"
+    return None
 
 
 @pytest.fixture(name="options")
@@ -130,24 +147,44 @@ def _refusal(domain: str, entity: Entity) -> str | None:
         return f"{type(entity).__name__} is not a {expected.__name__}"
     if action := next((c for c in ACTION_ENTITIES if isinstance(entity, c)), None):
         return f"{type(entity).__name__} is a {action.__name__} (action)"
+    if action_component := _action_component(entity):
+        return f"{type(entity).__name__} is a {action_component} (action)"
+    key = getattr(getattr(entity, "entity_description", None), "key", None)
     if isinstance(entity, ButtonEntity) and (
-        type(entity) is not RefreshButton
-        or entity.entity_description.key != REFRESH_KEY
+        type(entity) is not RefreshButton or key != REFRESH_KEY
     ):
-        return f"button {entity.entity_description.key} is not the refresh button"
+        return f"button {type(entity).__name__} ({key}) is not the refresh button"
     return None
 
 
 async def test_entities_are_read_only(
     hass: HomeAssistant, config_entry: ConfigEntry, router: FakeBox
 ) -> None:
-    """Every entity created with a password is admitted; no action entity."""
+    """Every entity created with a password is admitted; no action entity.
+
+    Home Assistant does not add the entities disabled by default to their
+    platform: every registry entry of the entry is enabled and the entry
+    reloaded, so that every entity the integration creates is checked.
+    """
     await setup_entry(hass, config_entry)
+    registry = er.async_get(hass)
+    entries = er.async_entries_for_config_entry(registry, config_entry.entry_id)
+    for entry in entries:
+        if entry.disabled_by is not None:
+            registry.async_update_entity(entry.entity_id, disabled_by=None)
+    assert await hass.config_entries.async_reload(config_entry.entry_id)
+    await hass.async_block_till_done()
     assert config_entry.state == ConfigEntryState.LOADED
 
     entities = _entities(hass, config_entry)
-    # The check is meaningful only if every platform created entities
-    assert {domain for domain, _ in entities} == {str(p) for p in PLATFORMS}
+    # The check is meaningful only if every registry entry is a checked entity
+    unchecked = sorted(
+        {e.entity_id for e in entries} - {entity.entity_id for _, entity in entities}
+    )
+    assert not unchecked, f"Entity(ies) not checked: {unchecked}"
+    # and if every platform created entities
+    empty = sorted({str(p) for p in PLATFORMS} - {domain for domain, _ in entities})
+    assert not empty, f"Platform(s) without entity: {empty}"
 
     refused = {
         entity.entity_id: reason
@@ -162,6 +199,7 @@ async def test_registry_is_read_only(
 ) -> None:
     """The registry entries of the entry: admitted platforms, refresh button only."""
     await setup_entry(hass, config_entry)
+    assert config_entry.state == ConfigEntryState.LOADED
 
     registry = er.async_entries_for_config_entry(
         er.async_get(hass), config_entry.entry_id
@@ -174,6 +212,8 @@ async def test_registry_is_read_only(
         or (e.domain == Platform.BUTTON and e.unique_id != f"{BOX_ID}-{REFRESH_KEY}")
     )
     assert not refused, f"Entity(ies) not admitted: {refused}"
+    buttons = [e.unique_id for e in registry if e.domain == Platform.BUTTON]
+    assert buttons == [f"{BOX_ID}-{REFRESH_KEY}"]
 
 
 async def test_no_service(
@@ -181,6 +221,7 @@ async def test_no_service(
 ) -> None:
     """The integration registers no service of its own."""
     await setup_entry(hass, config_entry)
+    assert config_entry.state == ConfigEntryState.LOADED
 
     services = _services(hass)
     assert not services, f"Service(s) of the domain {DOMAIN}: {services}"
@@ -200,6 +241,25 @@ def test_added_platform_is_refused(platform: Platform) -> None:
 
 class _SwitchingSensor(SensorEntity, SwitchEntity):
     """A sensor which also acts on the box."""
+
+
+class _Camera(Entity):
+    """Stand-in of Camera, whose module needs turbojpeg."""
+
+
+_Camera.__module__ = "homeassistant.components.camera"
+
+
+class _FilmingSensor(SensorEntity, _Camera):
+    """A sensor which also acts as a camera."""
+
+
+class _CalendarSensor(SensorEntity, CalendarEntity):
+    """A sensor which can also create events."""
+
+
+class _NamedButton(ButtonEntity):
+    """A button without entity description."""
 
 
 class _RestartButton(ButtonEntity):
@@ -227,6 +287,9 @@ def test_admitted_entities_pass() -> None:
         (Platform.SWITCH, SwitchEntity(), "switch"),
         (Platform.SENSOR, _SwitchingSensor(), "_SwitchingSensor"),
         (Platform.SENSOR, NumberEntity(), "NumberEntity"),
+        (Platform.SENSOR, _FilmingSensor(), "camera"),
+        (Platform.SENSOR, _CalendarSensor(), "CalendarEntity"),
+        (Platform.BUTTON, _NamedButton(), "_NamedButton"),
         (Platform.BUTTON, _RestartButton(), "_RestartButton"),
         (Platform.BUTTON, _refresh_button("restart"), "restart"),
     ],

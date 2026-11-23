@@ -2,7 +2,7 @@
 title: 'S13 — Garde de lecture seule : aucune plateforme ni entité qui écrit vers la box'
 type: 'chore'
 created: '2026-11-23'
-status: 'in-review'
+status: 'done'
 route: 'dispatch'
 review_loop_iteration: 0
 baseline_commit: 'a7026696b4a3a19d75f85e759519530af0f73828'
@@ -92,7 +92,14 @@ Revue du 2026-11-23, diff `a702669..73a3313` (19 kB), couches lancées : blind-h
 | R11 | blind-hunter | L'Approach gelée cite `button` parmi les plateformes à refuser, la décision Q1 l'admet pour Refresh. | false | rejeté : Q1 (ClaudeBox) tranche explicitement, pas de contradiction résiduelle ; correctif = édition de la spec |
 | R12 | blind-hunter | `uv run pytest tests/test_read_only.py` sort en code 1 (seuil de couverture 85 % global sur un seul fichier), alors que l'AC dit « passe ». | low | rejeté : correctif = édition de la spec (`--no-cov`) ; les 16 tests passent et la suite complète satisfait le seuil |
 
-Avancement : triage fait, correctifs `patch` (R1 à R6) NON appliqués — arrêt volontaire au budget de temps du tour. Reprise : appliquer R1–R6, rejouer la Vérification, puis étape 5.
+Correctifs appliqués le 2026-11-23 (triage validé par ClaudeBox) :
+- R1 : `test_entities_are_read_only` active toutes les entrées du registre de l'entrée, recharge l'entrée, et vérifie que chaque entrée du registre est une entité contrôlée (`Entity(ies) not checked`).
+- R2 : `CalendarEntity` ajouté à `ACTION_ENTITIES` ; `camera`, `assist_satellite`, `tts`, `conversation`, `ai_task` refusés par le module d'une classe parente (`ACTION_COMPONENTS`), car leurs modules demandent des dépendances absentes des tests (`turbojpeg`, `hassil`, `mutagen`) ; aucune dépendance ajoutée. Tests : capteur + caméra (substitut de module `camera`), capteur + `CalendarEntity`.
+- R3 : `_refusal` lit la clé par `getattr` et nomme la classe ; test d'un bouton sans description.
+- R4 : message `Platform(s) without entity`.
+- R5 : `LOADED` vérifié dans `test_registry_is_read_only` et `test_no_service` ; présence du seul bouton `refresh` dans le registre.
+- R6 : ligne S13 de `historique.md` marquée « Sans release ».
+Vérification : `tests/test_read_only.py` 19 passés ; suite complète 252 passés, couverture 99,46 % ; ruff 0.17.5 sans écart. Rien de différé.
 
 ## Verification
 

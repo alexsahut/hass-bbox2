@@ -33,7 +33,7 @@ Fork de `cyr-ius/hass-bbox2` (1.5.4) pour une Bbox Wi-Fi 7 (Sagemcom F@st 5696b,
 | — | #10 | 2.0.1 : précision d'affichage |
 | S11 | #11 | 2.0.2 : noms lisibles des appareils, choix des appareils suivis, nettoyage sans supprimer un appareil partagé avec une autre intégration |
 | S12 | #12 | 2.0.3 : décodage des textes encodés deux fois, traceurs actifs dès le premier setup et rattachés à l'appareil de l'hôte, suppression d'un appareil d'hôte = retrait du suivi |
-| S13 | #16 | Garde de lecture seule (`tests/test_read_only.py`) : plateformes admises, bouton Refresh seul, aucune entité d'action ni service du domaine `bbox` |
+| S13 | #16 | Sans release : garde de lecture seule (`tests/test_read_only.py`) : plateformes admises, bouton Refresh seul, aucune entité d'action ni service du domaine `bbox` |
 
 ## Releases
 
