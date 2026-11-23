@@ -12,7 +12,7 @@ Fork de `cyr-ius/hass-bbox2` (1.5.4) pour une Bbox Wi-Fi 7 (Sagemcom F@st 5696b,
 ## Choix techniques
 
 - Connexion par `mabbox.bytel.fr` : par adresse IP, toute l'API redirige (302) et la connexion cassait ; certificat vérifié.
-- Client interne GET-only (MIT) ; `bboxpy` n'est plus une dépendance depuis S4 (le fork bboxpy est archivé).
+- Client interne GET-only (MIT) ; `bboxpy` n'est plus une dépendance depuis S4 (le fork bboxpy n'est plus maintenu ; son archivage a été décidé le 23/11/2026).
 - Tolérance par endpoint (une erreur n'invalide pas tout) ; reconnexion unique sur 401, puis réauthentification HA.
 - Identifiant stable = MAC LAN publique de la box, identique avec ou sans mot de passe ; le n° de série n'est qu'une information.
 - Noms d'entités 100 % traduits (`translation_key`).
