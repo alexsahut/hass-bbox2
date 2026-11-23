@@ -110,3 +110,27 @@ Vérification : `tests/test_read_only.py` 19 passés ; suite complète 252 pass�
 
 **Manual checks (if no CLI):**
 - Essai local non commité : ajouter `Platform.SWITCH` à `PLATFORMS`, constater l'échec, annuler.
+
+## Code Review (bmad-code-review, 2026-11-23)
+
+Diff `a702669...c751ab1` (3 fichiers, +424), mode `full`. Couches : blind-hunter, edge-case-hunter, verification-gap, acceptance-auditor (aucune en échec). Étapes 1–3 faites ; correctifs NON appliqués (arrêt au budget de temps du tour) ; #16 non fusionnée.
+
+| # | Source | Constat | Verdict | Route |
+|---|--------|---------|---------|-------|
+| CR1 | blind-hunter, edge-case | `_refusal` repose sur une liste de classes interdites : une entité d'action absente de la liste passe (ex. `InfraredEmitterEntity`, `RadioFrequencyTransmitterEntity` de HA 2026.10), contraire au « tout ajout doit faire échouer » de la spec. | medium | patch : liste blanche par module — refuser toute classe parente de `homeassistant.components.<x>` hors `sensor`, `binary_sensor`, `device_tracker`, `button` (remplace `ACTION_ENTITIES`/`ACTION_COMPONENTS`) |
+| CR2 | blind-hunter, verification-gap | Le cas `NumberEntity()` est refusé par le contrôle de classe, pas par la liste d'action ; seuls `ToggleEntity`, `CalendarEntity` et le substitut caméra atteignent les branches d'action. | low | patch : hybrides `SensorEntity` + classe d'action (`_SettingSensor` avec `NumberEntity`, etc.) |
+| CR3 | verification-gap, acceptance-auditor | Le test R3 (`_NamedButton`) s'arrête au contrôle de classe et n'exerce pas le `getattr`. | low | patch : cas `RefreshButton` sans description, ou hybride capteur + bouton sans description |
+| CR4 | verification-gap | Aucune sous-classe de `RefreshButton` de clé `refresh` n'est testée : retirer `type(entity) is not RefreshButton` ne ferait échouer aucun test. | low | patch : cas paramétré |
+| CR5 | edge-case | `entries` lu avant le rechargement : une entrée créée au rechargement échapperait au contrôle « not checked ». | low | patch : relire les entrées après `async_reload` |
+| CR6 | blind-hunter, edge-case | Entités ajoutées plus tard par un écouteur du coordinateur (motif `_add_ports`) non contrôlées. | low | patch : rafraîchir le coordinateur avant `_entities` |
+| CR7 | blind-hunter, edge-case, acceptance-auditor | AC1 et Vérification : `uv run pytest tests/test_read_only.py` sort en code 1 (seuil de couverture global). | low | patch : `--no-cov` dans l'AC et la Vérification (hors bloc gelé) |
+| CR8 | blind-hunter, acceptance-auditor | Notes d'implémentation contradictoires avec `status: done`. | low | patch : note de clôture |
+| CR9 | blind-hunter | Test du registre redondant et lié au format du `unique_id`. | low | rejeté : le `unique_id` est l'identité du bouton ; doublon sans défaut |
+| CR10 | blind-hunter | Nettoyage S2 des entités d'écriture absent de la Code Map. | low | rejeté : antérieur à S13, sans défaut |
+| CR11 | blind-hunter | Mode sans mot de passe hors garde. | low | rejeté (R8, validé par ClaudeBox) |
+| CR12 | blind-hunter, acceptance-auditor | `historique.md` : « 233 tests ». | false | rejeté : le chiffre décrit l'état à la release 2.0.3 |
+| CR13 | acceptance-auditor | Tests de la matrice sur les fonctions, pas les messages des gardes. | low | rejeté (R9) |
+| CR14 | acceptance-auditor | Reconnaissance par module testée seulement avec un substitut. | low | rejeté : absorbé par CR1 |
+| CR15 | acceptance-auditor | Approach gelée : `button` parmi les plateformes d'écriture. | false | rejeté (R11) |
+
+Reste ouvert : CR1 (medium) et CR2–CR8 (patch, low). Reprise : appliquer CR1–CR8, rejouer la Vérification, puis fusion si CI verte.
