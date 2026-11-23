@@ -1,0 +1,86 @@
+---
+title: 'S13 — Garde de lecture seule : aucune plateforme ni entité qui écrit vers la box'
+type: 'chore'
+created: '2026-11-23'
+status: 'in-progress'
+route: 'dispatch'
+review_loop_iteration: 0
+baseline_commit: 'a7026696b4a3a19d75f85e759519530af0f73828'
+context: ['{project-root}/AGENTS.md']
+---
+
+<frozen-after-approval reason="human-owned intent — do not modify unless human renegotiates">
+
+## Intent
+
+**Problem:** La lecture seule de l'intégration n'est garantie que par le client (`BboxClient._request`) et par la fixture `read_only_guard`, qui ne contrôle que les requêtes émises pendant les tests. Rien n'empêche qu'on ajoute un jour une plateforme ou une entité d'action (interrupteur, nombre, sélecteur…) que les tests n'exercent pas.
+
+**Approach:** Ajouter un test qui charge l'intégration et échoue si elle déclare une plateforme d'écriture (`switch`, `button`, `number`, `select`, `text`, `light`…) ou crée une entité dont la classe expose une action, sans modifier le code de l'intégration.
+
+## Boundaries & Constraints
+
+**Always:** le test porte sur ce que l'intégration déclare et crée réellement (constante `PLATFORMS`, entités enregistrées) ; son message d'échec nomme la plateforme ou l'entité fautive.
+
+**Never:** aucune modification de `custom_components/bbox/` ; aucune requête vers une vraie box ; pas de liste de plateformes autorisées implicite (tout ajout doit faire échouer le test tant qu'il n'est pas explicitement admis).
+
+## I/O & Edge-Case Matrix
+
+| Scenario | Input / State | Expected Output / Behavior | Error Handling |
+|----------|--------------|---------------------------|----------------|
+| État actuel | `PLATFORMS` = sensor, binary_sensor, device_tracker, button (Refresh seul) | Test vert | N/A |
+| Plateforme ajoutée | `Platform.SWITCH` (ou number, select, text, light…) dans `PLATFORMS` | Test rouge, plateforme nommée | Message d'assertion |
+| Entité d'action ajoutée | Nouvelle classe d'entité héritant d'une entité d'action de HA | Test rouge, entité nommée | Message d'assertion |
+| Autre bouton | Bouton de clé autre que `refresh` (ex. redémarrage) | Test rouge, entité nommée | Message d'assertion |
+| Service ajouté | Service enregistré dans le domaine `bbox` | Test rouge, service nommé | Message d'assertion |
+
+## Decisions
+
+- **Bouton Refresh (Q1 = A, ClaudeBox, 2026-11-23) :** seul le bouton de clé `refresh` (classe `RefreshButton`) est admis dans la plateforme `button` ; tout autre bouton fait échouer le test. Aucun changement de code.
+- **Services (Q2 = A, ClaudeBox, 2026-11-23) :** le test vérifie aussi qu'aucun service du domaine `bbox` n'est enregistré après le chargement.
+
+</frozen-after-approval>
+
+## Code Map
+
+- `custom_components/bbox/__init__.py:27` -- `PLATFORMS` (sensor, binary_sensor, device_tracker, button) : source de vérité des plateformes ; à lire, pas à modifier.
+- `custom_components/bbox/button.py` -- `RefreshButton(BboxEntity, ButtonEntity)`, clé `refresh`, `async_press` → `coordinator.async_request_refresh()`.
+- `custom_components/bbox/sensor.py`, `binary_sensor.py`, `device_tracker.py` -- classes `BboxSensor`, `BboxBootTimeSensor`, `BboxBinarySensor`, `BboxDeviceTracker` (`ScannerEntity`) : aucune action.
+- `tests/conftest.py` -- fixtures `box_factory` / box authentifiée et `read_only_guard` (à réutiliser, ne pas modifier).
+- `tests/test_setup.py:16` -- `test_setup_entry` : modèle de chargement complet avec mot de passe (toutes les plateformes créées).
+
+## Tasks & Acceptance
+
+**Execution:**
+- [x] `tests/test_read_only.py` -- créer le test : (1) `PLATFORMS` ⊆ plateformes en lecture {sensor, binary_sensor, device_tracker} plus `button` ; (2) après chargement avec mot de passe, chaque entité de l'entrée appartient à un domaine admis et, pour `button`, seulement la clé `refresh` ; (3) aucun service du domaine `bbox` -- verrouille l'intention sans toucher au code.
+- [x] `docs/maintenance/historique.md` -- ajouter la ligne S13 au tableau des stories -- traçabilité du fork.
+
+**Acceptance Criteria:**
+- Given le code actuel, when `uv run pytest tests/test_read_only.py` s'exécute, then le test passe.
+- Given `Platform.SWITCH` ajouté localement à `PLATFORMS` (essai non commité), when le test s'exécute, then il échoue en nommant `switch`.
+- Given la suite complète, when `uv run pytest` s'exécute, then elle passe avec une couverture ≥ 85 %.
+
+## Implementation Notes
+
+- 2026-11-23, étape 3 (sous-agent d'implémentation, sans contexte préalable) : `tests/test_read_only.py` créé (4 tests : plateformes déclarées, entités créées avec mot de passe et tous les hôtes suivis, registre, services du domaine `bbox`) ; ligne S13 ajoutée à `docs/maintenance/historique.md` avec le n° de PR #16 présumé (à vérifier à l'ouverture de la PR). Aucun fichier de `custom_components/` modifié.
+- Vérifications rapportées par le sous-agent : `tests/test_read_only.py` 4 passés ; suite complète 237 passés, couverture 99,46 % ; ruff 0.17.5 sans écart ; essais temporaires annulés (plateforme `switch`, bouton `restart`, classe bouton + interrupteur, capteur + interrupteur, service `bbox.reboot`) : tous en échec avec un message nommant l'élément fautif.
+- Essai négatif refait par l'orchestrateur : `Platform.SWITCH` ajouté localement à `PLATFORMS` → `test_platforms_are_read_only` échoue (`Platform(s) not admitted (write to the box?): ['switch']`) ; fichier restauré, `custom_components/` propre, rien de commité.
+- Audit de la matrice (étape 3) NON SOLDÉ : la ligne « État actuel » est couverte par des tests qui tournent ; les lignes « Plateforme ajoutée », « Entité d'action ajoutée », « Autre bouton » et « Service ajouté » ne sont vérifiées que par des essais manuels annulés, pas par un test commité qui tourne. À faire avant l'étape 4 : tests unitaires des fonctions de refus (plateforme hors liste, bouton de clé autre que `refresh`, entité héritant d'une entité d'action, service `bbox` enregistré), ce qui demande d'extraire la vérification des plateformes et des services en fonctions testables dans le test.
+- Arrêt volontaire (budget de temps du tour) : statut laissé `in-progress`, étapes 4 et 5 non commencées, rien de commité ni poussé.
+- 2026-11-23, reprise de l'étape 3 (`bmad-build` relancé, implémentation directe par l'orchestrateur) : vérification des plateformes et des services extraite en fonctions (`_refused_platforms`, `_services`) ; ajout des tests de la matrice : plateforme ajoutée (`switch`, `number`, `select`, `text`, `light`), entité d'action (`SwitchEntity`, capteur héritant de `SwitchEntity`, `NumberEntity`), autre bouton (classe autre que `RefreshButton`, `RefreshButton` de clé `restart`), service `bbox.reboot` enregistré ; plus un contrôle positif (capteur, bouton `refresh`). `tests/test_read_only.py` : 16 passés ; suite complète : 249 passés, couverture 99,46 % ; ruff 0.17.5 sans écart.
+- Audit de la matrice SOLDÉ : chaque ligne est couverte par un test commité qui tourne et passe.
+- Essai négatif refait : `Platform.SWITCH` ajouté localement à `PLATFORMS` → `test_platforms_are_read_only` échoue (`Platform(s) not admitted (write to the box?): ['switch']`), comme les tests d'entités ; fichier restauré, `git diff` vide sur `custom_components/`.
+- Arrêt volontaire avant l'étape 4 (revue interne au tour suivant) : statut laissé `in-progress`.
+
+## Spec Change Log
+
+## Review Triage Log
+
+## Verification
+
+**Commands:**
+- `uv run pytest tests/test_read_only.py` -- expected: vert
+- `uv run pytest` -- expected: suite verte, couverture ≥ 85 %
+- `uvx ruff@0.17.5 check . && uvx ruff@0.17.5 format --check .` -- expected: aucun écart
+
+**Manual checks (if no CLI):**
+- Essai local non commité : ajouter `Platform.SWITCH` à `PLATFORMS`, constater l'échec, annuler.
