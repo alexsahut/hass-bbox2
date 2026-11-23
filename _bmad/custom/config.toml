@@ -1,0 +1,7 @@
+# Surcharge d'équipe, copiée dans <projet>/_bmad/custom/config.toml.
+# Le résolveur fusionne _bmad/config.toml, _bmad/config.user.toml, puis ce fichier :
+# il l'emporte donc aussi sur communication_language, rangée côté utilisateur.
+
+[core]
+communication_language = "French"
+document_output_language = "French"

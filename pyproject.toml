@@ -33,6 +33,8 @@ package = false
 [tool.ruff]
 target-version = "py313"
 line-length = 88
+# Dossiers installés par BMAD (outillage, pas le code de l'intégration).
+extend-exclude = ["_bmad", ".claude", ".agents", ".agent"]
 
 [tool.ruff.lint]
 select = ["E", "F", "W", "I", "UP", "B", "SIM"]
