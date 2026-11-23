@@ -2,6 +2,7 @@
 
 Fork : `alexsahut/hass-bbox2` (branche par défaut `master`), amont : `cyr-ius/hass-bbox2`.
 Ce fork est en lecture seule et indépendant : on ne contribue rien à l'amont (ni issue, ni PR, ni commentaire).
+Historique du fork (règles, choix techniques, stories, releases) : [`historique.md`](historique.md).
 
 ## 1. Suivi de l'amont
 
