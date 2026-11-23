@@ -4,7 +4,7 @@
 
 [workflow]
 
-persistent_facts = ["file:docs/maintenance/maintenance.md", "file:docs/maintenance/historique.md"]
+persistent_facts = ["file:AGENTS.md", "file:docs/maintenance/maintenance.md"]
 
 on_complete = """
 Rappel de fin de build : ouvrir la PR avec `gh pr create --repo alexsahut/<projet>`
