@@ -25,7 +25,7 @@ Reporter un correctif : ne jamais fusionner `upstream/master` en bloc. Créer un
 
 1. Lire les « breaking changes » de la version (config entries, coordinator, entity, device tracker).
 2. Mettre à jour la version de HA pour les tests : `pytest-homeassistant-custom-component` épingle `homeassistant` exactement, donc attendre la release du plugin ciblant la nouvelle version, puis `uv lock --upgrade-package pytest-homeassistant-custom-component && uv sync`. Ne pas forcer `homeassistant` par un `override-dependencies` : avec HA 2026.11.1 et le plugin 0.13.375 (HA 2026.10.4), la collecte des tests échoue (`RuntimeError: httpx was already imported; call alias_httpx() ...`, HA 2026.11 remplaçant `httpx` par `httpx2`). Tant que le plugin n'est pas publié pour la version courante de HA, les tests tournent sur la version précédente : le noter dans la PR et garder l'issue de suivi ouverte.
-3. Lancer `uv run pytest` (le seuil de couverture est de 85 %) et `uv run ruff check . && uv run ruff format --check .`.
+3. Lancer `uv run pytest` (le seuil de couverture est de 85 %) et `uvx ruff@0.17.5 check . && uvx ruff@0.17.5 format --check .` (version épinglée par la CI ; ruff n'est pas une dépendance du projet, `uv run ruff` échoue).
 4. Chercher les avertissements de dépréciation : `uv run pytest -W error::DeprecationWarning` (informatif).
 5. Vérifier que la CI (tests, lint, validate hassfest + HACS) est verte, puis tester sur une vraie installation HA avant de publier.
 

@@ -10,6 +10,7 @@ Fork en lecture seule de `cyr-ius/hass-bbox2` : intégration Home Assistant (dom
 - N'ajouter aucune écriture vers la box (interrupteur, bouton d'action, requête autre que `GET`) : seul le `POST login` est permis, et une fixture autouse de `tests/conftest.py` fait échouer tout test qui en émet une autre.
 - Ne jamais proposer d'activer l'UPnP de la box : l'intégration n'en a pas besoin, le capteur « UPnP IGD activé » le signale comme un problème.
 - Ne jamais lire, saisir, stocker ni journaliser le mot de passe d'administration de la box : seul le propriétaire le saisit, dans HA.
+- Ne rien installer ni mettre à jour dans Home Assistant sans relecture et sans le go explicite du propriétaire.
 - Ne créer ni tag ni release sans le go explicite du propriétaire : un tag `X.Y.Z` déclenche `release.yml`, qui publie `bbox.zip` sur la Marketplace HACS.
 - Ne rien ouvrir vers l'amont `cyr-ius/hass-bbox2` (PR, issue, commentaire) ; toujours `gh … --repo alexsahut/hass-bbox2`, base `master`.
 - Ne jamais fusionner `upstream/master` : reporter un correctif amont par `git cherry-pick -x` sur une branche `fix/...` (procédure : `docs/maintenance/maintenance.md` §1).
